@@ -26,6 +26,42 @@ Piglog is an in-SWI-Prolog source converter and runtime scheduler. It accepts a 
 2. `?- [prolog/piglog].`
 3. `?- piglog(member(X, [a,b,c]), [answers(first)]).`
 
+## Showcase
+
+Try these commands in `swipl` after loading `prolog/piglog` to see the main parts of the repository in action:
+
+### Run a goal with adaptive scheduling
+
+```prolog
+?- piglog(member(X, [a,b,c]), [execution(adaptive), answers(ordered)]).
+```
+
+### Generate and print readable Piglog code
+
+```prolog
+?- piglog((A is 2 + 1, B is A * 2), [code(show), trace(summary)]).
+```
+
+### Save generated code to a file
+
+```prolog
+?- piglog((A is 2 + 1, B is A * 2), [code(save('generated_demo.piglog.pl'))]).
+```
+
+### Capture scheduler trace terms for inspection
+
+```prolog
+?- piglog(member(X, [a,b,c]), [trace(terms(Events)), answers(first)]).
+```
+
+### Exercise execution gates
+
+```prolog
+?- [examples/secure_learning].
+?- piglog_unlock(answer_requested).
+?- piglog(reveal_answer(q1, Answer), [answers(first)]).
+```
+
 ## Running tests
 
 ```bash

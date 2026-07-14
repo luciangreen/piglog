@@ -1,0 +1,243 @@
+Piglog qa
+
+1. Project scope
+Is Piglog a new Prolog language, a source-to-source compiler, an interpreter, or all three?
+
+Should the first implementation target SWI-Prolog only, or be portable to Scryer, SICStus, etc.?
+
+It should be a converter that works in the SWI-Prolog interpreter.
+
+Is Piglog intended to preserve standard Prolog semantics except for execution strategy?
+
+Yes, there should be a Piglog command that runs the algorithm with an option to trace it (and sequential, speculative or adaptive options). Ideally, the code that runs the algorithm should be optionally output with the algorithm and saved for faster running. For example, in sequential mode, as soon as a variable becomes available, partitions depending on it should run in parallel or be queued. There should be commands to lock off Piglog in cases where password walls shouldn't give away secrets before passwords are entered or answers to questions shouldn't be given before the user has answered or requested the answer.
+
+2. Relationship to your other systems
+Should the pipeline be explicitly:
+Spec to Algorithm
+→ Starlog
+→ Loop2
+→ PLOP
+→ Detlog
+→ Piglog
+
+Yes
+
+or can Piglog operate independently?
+
+Refer to pre-Piglog dependencies
+
+Which optimisations belong in Piglog rather than PLOP or Detlog?
+3. Predicate partitioning
+What is the smallest executable "piglet"?
+predicate
+clause
+conjunction
+if-then branch
+loop
+compiler-selected segment
+another unit?
+
+A compiler-selected segment that is worth running in parallel.
+
+Should Piglog always partition automatically, or allow programmer annotations?
+
+automatically
+
+4. Scheduler
+Is scheduling intended to be:
+compile-time
+runtime
+hybrid?
+
+Should scheduling be deterministic for reproducibility?
+
+Yes, if it performs better.
+
+Should Piglog support work stealing in the first version, or later?
+
+In the first version.
+
+5. Parallelism
+Which execution modes should version 1 include?
+
+For example:
+
+sequential
+adaptive
+parallel
+fused
+pipeline
+failure_first
+first_answer
+all_answers
+ordered_answers
+
+All of the above (please document with understandable descriptions). 
+
+Should modes be selectable:
+globally
+per module
+per predicate
+per clause
+per call
+
+globally, unless commands are used (document).
+
+6. Readiness model
+Is the five-level readiness model fixed?
+0 Idle
+1 Invariants/types
+2 Constraints
+3 Probabilities
+4 Partial bindings
+5 Complete bindings
+
+or should the compiler allow additional readiness levels?
+
+Fixed
+
+Can predicates define custom readiness rules?
+
+Yes (document with examples). 
+
+7. Prediction
+Where should predicted values come from?
+splice tables
+memoisation
+previous executions
+programmer hints
+heuristic rules
+all of these
+
+all of these
+
+Are predictions always revocable?
+
+Maybe
+
+Is there a confidence threshold per predicate?
+
+Yes.
+
+8. Perturbations
+Are Piglog perturbations intended to become a formal language feature?
+Yes.
+
+Are perturbations:
+logical approximations
+dependency approximations
+value approximations
+all three?
+
+all three
+
+Should perturbations appear in generated code or remain an internal optimisation?
+
+Like everything, in generated code (make it intuitive)
+
+9. Variable pathways
+Should the compiler explicitly build a value-dependency graph?
+Yes, but react to the code partitions as if they are value (not just partition) dependent
+Does PLOP always remove unnecessary variable pathways before Piglog begins?
+Yes.
+
+Should Piglog ever rebuild or modify those pathways dynamically?
+Yes, in the case of secure logins or computer aided learning, etc. Proving formally should be done by PLOp.
+
+10. Deterministic cuts
+Should Piglog include deterministic-cut compilation, or leave this entirely to Detlog?
+Leave it to Detlog.
+If included, should cut become:
+dependency pruning
+scheduler cancellation
+deterministic branching
+another mechanism?
+
+None? It's in Prolog but hopefully would have removed by Detlog.
+
+11. Memory model
+Should Piglog use:
+immutable environments
+copy-on-write
+branch-local state
+splice tables
+streamed splicing
+
+immutable environments
+
+Is Apple IIe compatibility still an architectural goal, or only for Detlog?
+
+Neither
+
+12. Side effects
+Should predicates with side effects automatically execute sequentially?
+
+Yes.
+
+Should Piglog detect purity automatically or require annotations?
+
+automatically
+
+13. Cost model
+How should execution cost initially be estimated?
+static analysis
+runtime profiling
+programmer declarations
+heuristic estimates
+
+You decide, possibly all of the above
+
+Should expensive predicates receive dedicated execution slots?
+14. Expert-system integration
+Should Piglog include the expert-system scheduling ideas you've described, such as selecting methodologies and predicting algorithms, or remain purely a runtime optimiser?
+
+purely a runtime optimiser
+
+15. GitHub implementation
+Which language should GitHub Copilot Agent generate first?
+Prolog only
+Prolog + JavaScript visualiser
+Prolog + C runtime
+another combination
+
+Prolog only for the moment
+
+Should the repository include benchmarks from the outset?
+
+Yes, and cut heuristics and parallel except predictions etc, if Piglog is worse with this overhead.
+
+Should CI/CD be part of the initial requirements?
+
+No.
+
+16. Deliverables
+Besides the implementation, should Copilot generate:
+architecture documentation
+formal specification
+README
+design rationale
+API reference
+user manual
+tutorial
+benchmark suite
+test suite
+
+All of the above.
+
+17. Research positioning
+Do you want the requirements written as:
+an engineering specification,
+a GitHub development plan,
+a research prototype specification,
+or a publication-quality software requirements specification?
+
+For GitHub Copilot Agent
+
+Should the document distinguish clearly between:
+implemented features (required for version 1),
+planned features (future versions),
+and research conjectures (experimental ideas such as perturbations and predictive scheduling)?
+
+Yes, if that makes it easier (please tag the releases)
+
+I recommend that last distinction because it will make the requirements clearer for GitHub Copilot Agent and help separate concrete implementation tasks from longer-term research directions.

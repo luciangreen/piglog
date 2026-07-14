@@ -1,0 +1,1614 @@
+Piglog: Partition, concurrently and simultaneously attempt predicates
+#
+piglog
+#
+partition
+#
+concurrent
+#
+predict
+Piglog
+
+Piglog: Partition, concurrently and simultaneously attempt predicates
+
+When would some "non-humans" run predicates in parallel even without variables being defined yet?
+
+ChatGPT: A non-human system—especially a dataflow machine, neural system, swarm, or speculative Piglog-style runtime—might run predicates in parallel before variables are fully defined if it treats predicates as hypotheses rather than conclusions.
+
+In Prolog:
+
+a(X),
+b(X),
+c(X).
+
+normally means:
+
+Find X from a/1.
+Run b/1.
+Run c/1.
+
+A Piglog-like system might instead say:
+
+"There are many possible Xs. Start evaluating all useful consequences immediately."
+
+For example:
+
+colour(X,red).
+colour(X,blue).
+
+shape(X,circle).
+shape(X,square).
+
+Instead of waiting for X to be fully determined, it may run:
+
+colour(red)
+colour(blue)
+shape(circle)
+shape(square)
+
+simultaneously and later discover which combinations survive.
+
+This resembles:
+
+Constraint Logic Programming
+SAT solvers
+Neural message passing
+Dataflow architectures
+Human intuition
+
+Humans often do this. If I ask:
+
+"What might be behind the door?"
+
+you don't first determine the exact answer and then reason.
+
+You may simultaneously activate:
+
+person
+animal
+empty room
+treasure
+danger
+
+and then eliminate possibilities as evidence arrives.
+
+A Piglog-style execution might therefore operate on:
+
+possible(X)
+
+rather than
+
+known(X)
+
+Another possibility is running predicates on invariants.
+
+Suppose:
+
+distance(A,B,D)
+
+needs coordinates.
+
+A human may already know:
+
+distance >= 0
+distance(A,B)=distance(B,A)
+
+without knowing A or B.
+
+The invariant computations can begin immediately.
+
+Similarly:
+
+sort(List,Sorted)
+
+Even before List is known, the system may know:
+
+length(Sorted)=length(List)
+Sorted is ordered
+
+and propagate those constraints.
+
+In your Detlog/Piglog ideas, branch splicing suggests something stronger.
+
+Suppose:
+
+weather(sunny).
+weather(rainy).
+
+activity(X,Y).
+
+Instead of selecting one weather branch, Piglog could run:
+
+activity under sunny
+activity under rainy
+
+in parallel and splice common computations.
+
+If 90% of the work is identical, only the differing 10% needs separate execution.
+
+This is similar to symbolic execution and SIMD processing.
+
+A neuron-like interpretation is:
+
+Predicate waits for all inputs. (Prolog)
+
+Predicate activates when enough
+inputs are available. (Piglog)
+
+So a non-human system may run a predicate when:
+
+some variables are known,
+constraints are known,
+probabilities are known,
+invariants are known,
+possible values are known,
+
+rather than waiting for exact bindings.
+
+In that view, a variable is not simply "bound" or "unbound"; it may exist in states such as:
+
+unknown
+possible
+constrained
+likely
+partially known
+fully known
+
+and computation can begin at any of those stages. That is much closer to neural, swarm, and dataflow computation than classical Prolog's strict bind-then-execute model.
+
+How can Piglog run a predicate when:
+
+some variables are known,
+constraints are known,
+probabilities are known,
+invariants are known,
+possible values are known,
+There are several computational models in which this is possible. The important distinction is that the predicate is partially evaluated rather than fully executed. Here are ways Piglog could support each case.
+
+Some variables are known
+Example:
+
+distance(X,Y,D).
+
+Suppose only X is known.
+
+Instead of waiting for Y, Piglog could compile the predicate into stages:
+
+Stage 1: Compute everything depending only on X.
+Stage 2: Suspend.
+Stage 3: Resume when Y arrives.
+
+Much like currying or partial application in functional programming, except for logic predicates.
+
+Constraints are known
+Suppose:
+
+X > 0,
+Y > X,
+f(X,Y,Z).
+
+The predicate can already infer things like:
+
+Y > 0
+impossible branches
+valid search intervals
+
+before either variable has a concrete value.
+
+Constraint Logic Programming already does something similar by propagating constraints without assigning values.
+
+Piglog could let every predicate publish:
+
+required constraints
+derived constraints
+
+allowing constraint propagation to occur concurrently.
+
+Probabilities are known
+Suppose a learned model predicts
+
+X = cat 0.82
+X = dog 0.15
+other 0.03
+
+Instead of waiting,
+
+Piglog may begin evaluating
+
+animal(cat)
+
+immediately,
+
+while evaluating
+
+animal(dog)
+
+at lower priority.
+
+If later evidence changes the probabilities, unfinished work can simply be discarded.
+
+This resembles speculative execution used in modern CPUs.
+
+Invariants are known
+Many predicates have parts independent of particular values.
+
+Example:
+
+sort(Input,Output).
+
+Before seeing Input, Piglog already knows
+
+length(Output)=length(Input)
+Output is ordered
+Output is a permutation
+
+Those facts can propagate through the graph immediately.
+
+Similarly,
+
+matrix_multiply(A,B,C)
+
+may immediately infer
+
+rows(C)=rows(A)
+cols(C)=cols(B)
+
+before any multiplication begins.
+
+Possible values are known
+Suppose
+
+colour(red).
+colour(green).
+colour(blue).
+
+Instead of
+
+red
+then green
+then blue
+
+Piglog could launch three workers simultaneously.
+
+Later predicates receive a stream of candidate bindings instead of waiting for one answer at a time.
+
+A sixth possibility: symbolic execution
+
+Instead of concrete values,
+
+X = ?
+
+Piglog keeps
+
+X = symbolic
+
+For
+
+plus(X,2,Y).
+
+it computes
+
+Y = X+2
+
+without needing X.
+
+Only when X becomes
+
+5
+
+does
+
+Y
+
+collapse to
+
+7
+
+Many theorem provers and SMT solvers already operate this way.
+
+A seventh possibility: dependency scheduling
+
+This may be closest to your Piglog concept.
+
+Instead of scheduling predicates by textual order,
+
+a,
+b,
+c,
+d.
+
+Piglog schedules according to dependency readiness.
+
+    a
+  / | \
+ b  c  e
+  \ | /
+    d
+The scheduler asks
+
+"Which predicates have enough information to make progress?"
+
+rather than
+
+"Which predicate is next?"
+
+Every predicate exposes:
+
+required inputs
+optional inputs
+invariants
+partial outputs
+
+As soon as enough information is available, it runs.
+
+This leads to a possible Piglog execution model with explicit readiness levels:
+
+Readiness Information available Action
+0 None Idle
+1 Types/invariants Compile or specialise the predicate
+2 Constraints Propagate constraints, prune impossible branches
+3 Probability distribution Speculatively execute likely branches
+4 Partial variable bindings Partially evaluate the predicate
+5 Complete bindings Produce definitive results
+
+Instead of treating predicates as requiring all inputs before starting, Piglog would allow them to make progress whenever they reach a sufficient readiness level. This turns execution into a form of dataflow scheduling, where information—whether exact values, constraints, or probabilities—flows through the predicate network and progressively enables more computation.
+
+Try harder in preparation for Prolog program requirements.
+Thought for a couple of seconds
+
+Here is a stronger Piglog Prolog program requirement:
+
+Piglog should not “run a predicate early” by pretending unknown variables are known. It should split every predicate into readiness modes.
+
+predicate_state(Predicate, Readiness, Inputs, Outputs).
+
+A predicate may run when it can produce any useful information, not only final answers.
+
+Example:
+
+p(X,Y,Z) :-
+q(X,Y),
+r(Y,Z),
+s(X,Z).
+
+Piglog converts this into a dependency network:
+
+X known? -> q can specialise
+Y known? -> r can run
+X,Z constrained? -> s can prune
+
+Each predicate has multiple entry points:
+
+q_full(X,Y,Result). % all variables known
+q_partial_x(X,Constraints). % only X known
+q_constraints(C0,C1). % constraints known
+q_probs(P0,P1). % probabilities known
+q_invariants(I). % always true facts
+q_candidates(Candidates). % possible values known
+
+So the runtime asks:
+
+What can this predicate do now?
+
+not:
+
+Can this predicate fully finish now?
+
+A practical requirement could be:
+
+:- pig_predicate q/2.
+
+pig_mode(q/2, full, [ground, ground], produces(result)).
+pig_mode(q/2, partial_x, [ground, var], produces(constraints)).
+pig_mode(q/2, constraints, [constraintset], produces(pruning)).
+pig_mode(q/2, probable, [distribution], produces(speculative_jobs)).
+pig_mode(q/2, invariant, [], produces(invariants)).
+
+Then Piglog schedules jobs like:
+
+ready(Job) :-
+job(Job, Predicate, Mode),
+mode_requirements_satisfied(Predicate, Mode).
+
+The key program requirement:
+
+A Piglog predicate must declare what it can compute at each information level.
+
+This avoids magical parallelism.
+
+For example:
+
+path(A,B,Path)
+
+could declare:
+
+pig_mode(path/3, invariant, [], produces([
+path_is_list,
+start_equals_a,
+end_equals_b
+])).
+
+pig_mode(path/3, partial_start, [ground,var,var], produces([
+reachable_candidates
+])).
+
+pig_mode(path/3, constrained, [ground,ground,var], produces([
+search_space
+])).
+
+pig_mode(path/3, full, [ground,ground,var], produces([
+paths
+])).
+
+So before B is known, Piglog might still compute:
+
+nodes reachable from A
+
+When B becomes known, it reuses that work instead of starting from scratch.
+
+That is the performance gain.
+
+The program requirements should include:
+
+Predicate partitioning
+Split a Prolog clause into dependency units.
+
+Readiness analysis
+Detect which units can run with known, partial, constrained, probable, or possible data.
+
+Multi-mode predicates
+Each predicate may expose full, partial, constraint, probability, invariant, and candidate modes.
+
+Parallel scheduler
+Run every currently useful predicate mode simultaneously.
+
+Splice store
+Save partial results so later bindings reuse them.
+
+Cancellation
+Kill speculative branches when later evidence disproves them.
+
+Priority
+Run likely/high-value predicates before unlikely ones.
+
+Deterministic merge
+Combine parallel results into ordinary Prolog-compatible answers.
+
+Safety
+Only parallelise pure predicates unless side effects are explicitly isolated.
+
+Fallback
+If no Piglog mode exists, run the predicate as normal Prolog.
+
+The central slogan:
+
+Prolog waits for answers.
+Piglog runs on information.
+
+Or more technically:
+
+Piglog converts predicates into incremental dataflow processes that execute whenever they can produce constraints, candidates, invariants, probabilities, or final bindings.
+
+Pigdetlog runs a predicate if it knows the variables to a high probability, based on their splice data
+
+That is an interesting extension of your Pigdetlog idea. In effect, you are proposing that execution order should be guided not just by syntactic dependencies (which variables are already bound), but also by predicted bindings derived from splice data.
+
+One way to formalise it is:
+
+Pigdetlog executes a predicate when the probability that its required variables are correct, as inferred from splice data, exceeds a configurable confidence threshold.
+
+This differs from ordinary Prolog and your earlier Detlog ideas:
+
+System When is a predicate executed?
+Prolog Only when variables are sufficiently instantiated according to program order.
+Detlog When deterministic loops and splice operations make execution possible.
+Pigdetlog When splice analysis predicts the missing variables with sufficiently high confidence.
+
+For example, suppose you have
+
+person(Name, Age, City).
+income(Age, Salary).
+tax(Salary, Tax).
+
+Traditional execution requires
+
+person(Name, Age, City),
+income(Age, Salary),
+tax(Salary, Tax).
+
+Pigdetlog might observe from previous splice data that
+
+Age ≈ 35 (98%)
+Salary ≈ 120000 (94%)
+
+and therefore begin evaluating
+
+tax(120000, Tax)
+
+before income/2 has actually produced Salary. Later, when the actual splice arrives:
+
+if prediction matches, computation is retained;
+if prediction differs, the speculative result is discarded and recomputed.
+
+The splice data effectively becomes a probabilistic cache.
+
+Internally, Pigdetlog might represent variables as
+
+Age =
+{
+value:35,
+probability:0.98,
+source:splice
+}
+
+and predicates could declare confidence requirements, for example
+
+:- confidence(tax/2, 0.90).
+:- confidence(expensive_search/3, 0.99).
+
+Then the scheduler could operate like
+
+for each predicate P:
+estimate probabilities of missing variables
+if minimum confidence ≥ threshold(P)
+execute P
+else
+wait for more splice information
+
+This makes Pigdetlog resemble speculative execution in CPUs, but at the logical level. Instead of speculating on branches, it speculates on logical variable values using splice information. It also has similarities to Bayesian inference and probabilistic logic programming, but the probabilities are used primarily for execution scheduling rather than changing the semantics of logical truth.
+
+If combined with your existing splice mechanism, Pigdetlog could become a language in which:
+
+Detlog performs deterministic branch splicing.
+Piglog represents simultaneous execution from multiple perspectives.
+Pigdetlog schedules predicates opportunistically whenever splice data predicts their inputs with high confidence, allowing expensive predicates to start earlier and potentially improving throughput on parallel hardware.
+Splice probability could be calculated from probability within a list and splice. Separately, Pigdetlog could schedule expensive predicates in regular available slots.
+
+Yes. That separates Pigdetlog into two clean mechanisms:
+
+Splice probability A variable’s confidence can come from how often a value appears inside a splice/list.
+splice = [a,a,a,b,a,c]
+
+P(X = a) = 4 / 6 = 0.667
+P(X = b) = 1 / 6 = 0.167
+P(X = c) = 1 / 6 = 0.167
+
+So Pigdetlog can say:
+
+probable_value(X, a, 0.667)
+
+Then a predicate can run early only if its needed variables exceed a threshold:
+
+run_if_probable(Predicate, Variables, Threshold).
+
+Expensive predicate scheduling Separately, expensive predicates do not need to run immediately. They can be placed into regular execution slots:
+cheap predicates: run now
+medium predicates: run when inputs are likely
+expensive predicates: run in scheduled slots
+very expensive predicates: run only when confidence is high
+
+So Pigdetlog becomes:
+
+Detlog = deterministic splicing
+Piglog = simultaneous predicate perspective
+Pigdetlog = probabilistic splice scheduling + cost-aware slots
+
+A nice rule would be:
+
+Run predicate P when:
+
+confidence(inputs(P)) >= threshold(P)
+and
+cost(P) fits current available slot
+
+For example:
+
+:- threshold(tax/2, 0.80).
+:- cost(tax/2, cheap).
+
+:- threshold(expensive_search/3, 0.98).
+:- cost(expensive_search/3, expensive).
+:- slot(expensive_search/3, every_10_cycles).
+
+So Pigdetlog does not merely ask:
+
+“Are the variables known?”
+
+It asks:
+
+“Are they probable enough, and is this the right execution slot?”
+
+That gives you a clearer architecture: probability decides readiness; scheduling decides timing.
+
+Piglog separates predicates into runnable sections, at a minimum, an if-then clause or including the following code. The dependency of the algorithm sections is handled via a variable pathway to most efficiently and effectively find needed values as soon as possible for likely values. Because PLOP should have removed unused variable pathways, only necessary variable pathways will remain, so the priority shifts from parallel computation to value prediction.
+
+Yes — that is the sharper formulation.
+
+After PLOP, Piglog no longer needs to ask mainly:
+
+“Which predicates can I parallelise?”
+
+It asks:
+
+“Which necessary value pathway should I predict or resolve first?”
+
+So Piglog’s core becomes:
+
+PLOP: remove unused branches and unnecessary variable pathways.
+Piglog: split the remaining algorithm into runnable sections and prioritise value discovery.
+
+A runnable section could be:
+
+if Condition then Body
+
+or a larger section:
+
+if Condition then
+Body1,
+Body2,
+Body3
+
+The dependency graph is then not just predicate-to-predicate. It is value-pathway dependency:
+
+needed output
+← variable needed by later section
+← earlier section that can produce it
+← likely/probable values
+← constraints/invariants/splice rows
+
+So the stable Piglog process is:
+
+PLOP removes unused variable paths.
+Piglog divides remaining code into runnable sections.
+Piglog builds a value-pathway graph.
+It ranks missing values by usefulness to later sections.
+It predicts or computes the highest-value missing variables first.
+Sections become runnable as soon as enough values are known or probable.
+Later verification corrects speculative runs.
+The important shift is:
+
+parallel predicates → predicted necessary values.
+
+That makes Piglog less like “run everything simultaneously” and more like a probabilistic dependency resolver for Prolog sections. Parallelism still exists, but it becomes secondary: it is used only when several necessary value pathways are similarly promising.
+
+An example of a definite value is a memoised value, such as an initial loop value, or the Gaussian formula result of having run a loop, or the tabled or probable pattern-suggested subterm indexing looping (loop) value.
+
+Yes. Those examples point toward a useful distinction in Piglog between definite, derived, and predicted values. I would refine the terminology as follows.
+
+Definite values
+
+These are values that Piglog can treat as established without further search.
+
+Examples include:
+
+Input values supplied by the caller.
+Memoised values from previous executions.
+Initial loop values, such as the current loop index or accumulator.
+Tabled values that have already been computed.
+Results of deterministic algorithms, such as a Gaussian elimination result once the elimination has completed.
+Constants and invariants.
+
+These values have confidence 1.0 and need not be recomputed unless invalidated.
+
+Derived values
+
+These are not stored initially but can be obtained deterministically from definite values.
+
+Examples include:
+
+A Gaussian elimination solution computed from known coefficients.
+A value obtained by subterm indexing.
+A value produced by deterministic looping.
+A splice result assembled from definite branches.
+
+Although these are computed, once obtained they become definite.
+
+Predicted values
+
+These are values that have not yet been proved but are sufficiently likely to justify speculative execution.
+
+Examples include:
+
+Pattern-suggested subterm-indexing candidates.
+Frequently occurring loop values.
+Values inferred from previous executions.
+Values ranked highly by dependency analysis.
+Probable splice candidates.
+
+These carry a probability or confidence score and should be verified before being committed as definite.
+
+For Piglog, execution priority could therefore become:
+
+Use definite values.
+Compute inexpensive derived values.
+Predict high-confidence values if needed to enable later runnable sections.
+Execute sections that have become runnable.
+Verify predictions and update memoisation or tables.
+
+This fits well with your idea that, after PLOP has removed unnecessary variable pathways, Piglog's primary optimisation is no longer exhaustive parallel execution but efficient discovery of the values that unlock the largest number of downstream algorithm sections. In that sense, the dependency graph is better viewed as a value-dependency graph than a traditional predicate call graph.
+
+
+30. Try harder to find methods to code deterministic cuts. Treat the piglets in Piglog as the threads or predicates of the algorithm running simultaneously. Run a predicate when some variables are known. Mark which constraints are known. Mark which probabilities are known.
+31. Invariants are known. Possible values are known. Readiness. Information available. Action. 0.
+32. None. Idle. 1. Types/invariants. Compile or specialise the predicate. 2.
+33. Constraints. Propagate constraints, prune impossible branches. 3. Probability distribution. Speculatively execute likely branches. 4.
+34. Use the information available. None. Idle. 1. Types/invariants. Compile or specialise the predicate. 2. Constraints. Propagate constraints, prune impossible branches. 3. Probability distribution. Speculatively execute likely branches. 4. Partial variable bindings. Partially evaluate the predicate. 5. Complete bindings. Produce definitive results. Prepare for the Prolog program requirements.
+35. I synthesised decision trees from Spec to Algorithm, Starlog, Loop2, Plop, Detlog and Piglog. Decision trees from Spec to Algorithm - merge clauses, and attempt to run them in this way for better performance. Starlog - syntactic optimisation. Loop2 - converts findall to loops. Plop - semantic optimisation with necessary variable output, subterm indexing, subterm index looping, formulas with Gaussian elimination and memoisation. Detlog uses the splice predicate to perform nondeterminism.
+36. Piglog merges predicates, running them simultaneously for better performance. They are synthesised by merging predicates and clauses, converting findall and formulas, and performing semantic optimisation, using splice for examination, fast nondeterminism, and Starlog for syntactic optimisation. If anything, a single command that converts the entire conversion pipeline is missing. All converters should be interpreter modules. To have citations. Philosophy of Computer Science articles.
+37. In terms of the report of Computer Science and sentences that are syntheses of ten sentences. Computer science/philosophy format. 30 pages. 15, not 10, sentences for the main writer. X add egs to the Socratic analyses. Do 20-level details for 10 points; the computer does the rest.
+38. Research ZPD tracking, including comments and connections, by checking whether students enjoyed understanding a point and the connection between comments. Encourage discussion and reflection in one-minute exams after lectures, and increase enjoyment and examination of the material. Build an invariant formal logic chatbot. Create invisible bugless methods. Design a chatbot that suggests interesting methods of joining algorithms.
+39. Using an expert system. Snake data flows through existing preds. Old idea of linked specs in dictionary. Reconnect specs, which are in terms of subterm with address, etc. Can do extreme optimisation up to and after recording dictionary items. It should check it, redo it, and find the exact solution.
+40. Instead of an attention framework, it finds steps in order, fills in missing steps, and makes corrections using an expert system. Instead of interpolating data flow, it inspects query terms and builds or modifies the solution. Uses expert algorithms in dict to construct solutions. May not mix algs, just runs one or a chain. Finds interdisciplinary solutions even when not conventional. Area of study: expert systems.
+41. Write long algorithms, inferring and using initiative to complete them. Do not fear induction or writing chatbots. Change the following sentences to Prolog browser menu items: Find methodologies and paths between them in terms of sentences. Connect points, but keep data about conns. Connect points. Use interfaces and specs. Generate sentences by agent-writing agents.
+42. Have a chatbot author a chatbot and produce work.
+
+43. Detlog - explicit conditions from nondeterminism. Reuse code. Without variables. The splice predicate, etc., applies to simple cases and is not designed to make code more complicated. Cut needs to be simplified to deterministic logic to meet robot and real-time requirements. Record taxonomies and problematic conversion cases.
+44. Chatbot agents may define optimal output as not overdescribed and divided into thought chunks, with something interesting to think about at each point. Why can't the high-quality secret computation, or another example, be made explicit at each point, at least referred to? Piglog unknown variables from tables of previous values. Lucian Academy should automatically detect disk-mounted departments and convert text files to Essay Helper files. Piglog runs segments in parallel by finding segments based on completed variable unifications, predicting the best choice, or revealing the path based on data predictions. Ideas for manual (non-statistical) approximations of regression.
+45. By taking the result of a predicate, other predicates that need this value can run in parallel to improve performance. When would some "non-humans" run predicates in parallel, even without variables being defined yet? Piglog (sic) activates predicates when enough variables are available, or some variables are known. Constraints are known. Probabilities are known.
+46. Invariants are known. Possible values are known. 
+47. How can Detlog be run on a 6502? 
+48. Finding multiple clauses and performing unification require their own compiler. 
+49. The compiler and converter should be run one at a time. 
+50. Algorithms can be divided into the least-invasive parts or loops. This may require loop syntax that allows pausing, saving and continuing.
+51. The compiler would need to be well-designed to cope with memory limitations if it compiled nondeterminism deterministically. Optimisation helps, but keeping data to splice is not as favourable as splicing as one goes, or optimising delayed splicing. Detlog is likely to have lower memory overhead than Prolog. Piglog can also run algorithms by executing its predicates in parallel, predicting data and choices, thereby improving performance. Codegen learning. The Prolog browser chatbot presents a chat menu with auto-completed queries.
+52. Just answers questions. If there is a part to be modified, it does it. If there is a ". " before ". " in Prolog, delete it. If there is a syntax error or repeated include, delete it.
+53. Inspect, in other words, neurospect an algorithm with manual annealing to optimise it. Given input, output, and context, with types and patterns of types and characters, neuromatches to an algorithm. Convert list of specs to grammars. Data is converted to the appropriate type if it is any of those types. Data can have invariants (constants). If given user data, it shouldn't delete the production database.
+54. It is possible to claim that, with Context-Free Grammar Generators and predicate generators, a form of artificial General Intelligence has been achieved. Nondeterminism simulated as determinism allows natural expression speed and allows longer computations to run instantly. Reoptimise algs with general enough breadth to include useful cases. This breadth should be sufficient to avoid mistakes based on prior knowledge and to be respectful of local or global frontiers of knowledge. Global approaches to knowledge need to be respected in the new relationships they uncover, and the implications of the reduced topology of knowledge for other conclusions need to be finalised for all knowledge. This conjecture can’t be done by me using my systems.
+55. Chatbot. A programming language to produce a program. Cfg generator as a central idea in a chatbot. Chatbot checks using expert systems. Physics checked against. Physics is included, like chemistry and biology.
+56. Race to replace mathematics with AI with spec to algorithm. Spec to Algorithm, PLOP and theorem provers, using S2A to find macroproofs, fill gaps and insert proof sequences. S2A inserts methodologies for IO proof specs. Cp to loops and spliced output- classes define well-writtenness and whether nondeterminism can be refactored simply without lone choice points and backtracking between predicate branches can be made into a single predicate with loops and optionally run expensive predicates. Choice points to loops and spliced output-instead of tabling, edit or morph the repeated clause. How can general cases from multiple algorithms help propose laws?
+57. Robots-minimal set of everything such as Text-to-Breasonings, Grammar Logic, Time Travel to immortality simulation, Spec to Algorithm, optimisations. Loop2 arg ideas-ways of refactoring or writing without extra choice points, using compression, or cfg generators and non-brute-force algorithms. Spec to Algorithm’s code generator (using Combination Algorithm Writer, dictionary data) also converts sentence specs into data, then into code using S2A and generators. Tests are changed. Lucian CI/CD tests and modifies code in response to test changes. Predicates are merged.
+58. Spec to Algorithm needs to be modified to handle greater than 14 items at a time, possibly with a manual neuronet. Logic also needs to be applied to generate code, change tests, make changes, test, and debug code in precise, natural language. Lucian CI/CD finds code using logic, in and between predicates. I need Prolog because it produces cognitive code. I need Detlog because it combines the syntax of Prolog with even greater simplicity of fewer compiler instructions. While a(1).
+59. A(2). Becomes a([1,2]). In Detlog, clauses remain clauses and are collected by findall rather than being converted to a list by the converter, allowing them to be processed by higher-order algorithms. Member with findall of spliced output, abstracted out by the converter. Detlog is the only way to run Prolog on an Apple IIe. Detlog simulates cuts.
+60. Cut mult. Context-Free-Grammar generator grammars, maths. Cut in member_cp. End of pred. Cut Object Hamlet or integration multiplication in Conglish. MNN and logic.
+61. Integration. Sane. Detlog comments to show findall trace. Detlog allows examination of nondeterminism through the deterministic splice predicate. Logic in member cps allows subterm indexing and looping through them. Logic is like neuronet content, a single starlog command to produce output.
+62. Neuronets might optimise logic by skipping B in transitivity, for example, A to B, B to C, gives A to C. Perhaps delete the h1a line. Include('. Philosophy/s2a/spec_to_algorithm.pl'). Delete.
+63. Writeln(Out),. Or is it? Writeln(G2). Include query with alg. H1a helps uncover the meaning of args for a topic through spellings and uncover how to write a mind mapping alg. Detlog.
+64. Assertz. Recompile new preds, x. Instead, place in structures if data or algs. Higher-order programming. Recompile the X chain command. MNNs.
+65. MNNs are just the algorithm, with others, optimised and self-evident inferences drawn using NNs or MNNs aimed at laws, methodology levels and domains. Process command terms and run commands (higher-order programming) by simulating or transitively predicting these. Flatten hierarchies of preds. Flatten higher-order programming hierarchies to Apple IIe chain command to use less memory. Oliver Tree sim. Derivy” means “something generated from something else.
+66. Proofs do not always correspond to algorithms. Proofs are algorithms with types. Non-classical logic and detlog. Properties of Spliced branches may be possible/from one/several/searched/operated on branches or necessary/from all/mapped/collected/processed branches. MNNs may select from possible spliced data before computing, even deferring splicing in case an output may not require computation. Example of skipping splices in detlog with MNNs: If 1 appears with a,b more often, check 1’s first.
+67. MNNs skip and operate on splices. Yes. In your framework, one of the main purposes of an MNN could be to avoid unnecessary branch expansion by operating directly on splices. Other operations. Find invariant. MNNs only have invariants; they can compute variants based on data.
+68. Flatten predicate hierarchies by treating dependent variables as indices. Operate on data in topological graph slices, not data structures. To find the invariant not data ops. Then, manipulate, and… the invariant levels (heuristic logic). Prioritise, think of aims, think of the world and logic and … when rewriting rules. I am researching the idea of “any heuristic” to choose data to splice from nondeterministic predicates in my new Detlog programming language.
+69. Freedom of expression (connecting anything effortlessly) is the required mathematical standard. To also achieve the correct standard for the simulation, one needs working object science simulations for noninvasive and legal DevOps moves. Prolog. N accessible from nd to d loop. Neurosplice takes data and splices it by interpreting it. It may also involve selectively splicing the data.
+70. Cuten (sic) interpreter optimises splices. It also debugs it. Neurosplice takes and interprets. In addition to syntactic and semantic compression, Prolog compresses lines, predicates, algorithms, content, and other dimensions using sentence specs to specify code. Detlog memory problem solved by splicing the data in segments, forgetting memory used by commands with or without output and reusing the same commands, predicates and algorithms but with different data flow in memory. This is a manifestation of quantum memory.
+71. Brit-Cov style fg instead of f.g for nested functions in starlog and method chaining in it. Quantify qualifications of mnn manual annealing optimisation correlation, for example, how safe and secure, how many features per level or levels of features, the correlation (Gaussian elimination or algorithmic formula between variables) is. Use neuro techniques to optimise the algorithm when you have all the data to splice for each stage of the algorithm, for example, a subterm with an address for building, processing and outputting (where the subterm with an address optimises and merges processing and outputting). Piglog treats algorithms as data and segments detlog for running on Apple IIe. Converts to a chain with memory variables.
+72. Ideas for manual (non-statistical) approximations of regression. Based on cognition. Chatbots should use these methods to guide human and robot cognition and maintain attention. Chatbot/voice smartphone interface. Creating Prolog algorithms and running Prolog. Piglog is effective because it chooses the most likely path rather than just finding the data and path; it considers other paths.
+
+Yes. A stronger formulation is:
+
+Piglog may be more efficient than ordinary Prolog execution when resource use is optimised, because it exposes a better execution structure. Instead of treating the program as one backtracking search, Piglog can partition it into runnable sections, especially by predicate boundaries and nested if-then clauses. Each partition can then be scheduled, predicted, memoised, or run in parallel when enough variables, constraints, probabilities, or invariants are known.
+
+The stable base level is therefore not “parallelise everything,” but “partition where execution meaningfully becomes decidable.” Predicate boundaries are natural units because they preserve logical meaning. If-then clauses are also natural units because they define decision points where known values can choose a path early. Piglog becomes useful when these partitions reduce wasted search, avoid repeated calls, and let likely values be pursued before unlikely ones.
+
+In short: Piglog = predicate/if-then partitioning + value-aware scheduling + resource optimisation.
+
+Can’t equally available partitions be run in parallel without worrying about performance?
+
+Not quite. Equally available partitions can be run in parallel, but Piglog still has to worry about performance because parallelism has overhead.
+
+The rule should be:
+
+Run partitions in parallel when they are independent enough and expensive enough.
+
+Good parallel candidates:
+
+predicates whose required variables are already known
+if-then branches whose guards can be tested independently
+expensive predicates likely to succeed
+memoised or table-indexed predicates
+partitions that do not compete heavily for the same memory/resource
+
+Bad parallel candidates:
+
+tiny predicates where scheduling costs more than execution
+partitions that will probably fail quickly
+branches where one early result would make the others unnecessary
+predicates sharing too many variables or locks
+cases where parallel output must be re-sorted or re-spliced expensively
+
+So Piglog’s stable principle is:
+
+Equally available does not mean equally worth running.
+
+A better formulation:
+
+Piglog may run equally available partitions in parallel, but only after checking whether parallel execution is likely to save more time than it costs. Availability means a partition can run; profitability means it should run now. Predicate partitions and if-then partitions are good candidates when they are independent, sufficiently expensive, and likely to contribute useful values. Otherwise, Piglog should prefer sequential, memoised, or priority-based execution.
+
+What is safer: In the future, Even though parallel processing is usually reserved for expensive, predicates that are likely to succeed a new type of parallel processing should be designed for small, possibly failing partitions. Piglog is optimal for this model. OR Piglog should cleverly coordinate parallelisable and non-parallelisable partitions with given resources for best performance.
+
+The second is safer:
+
+Piglog should cleverly coordinate parallelisable and non-parallelisable partitions with given resources for best performance.
+
+It is safer because it does not overclaim that Piglog is already “optimal,” and it allows for mixed execution: parallel, sequential, memoised, predicted, skipped, or delayed.
+
+A stronger combined version is:
+
+Piglog should coordinate parallelisable and non-parallelisable partitions according to available resources, dependency structure, likely success, and execution cost. In the future, this may include a special lightweight form of parallel processing for small or possibly failing partitions, but Piglog should not assume that every available partition is worth running in parallel.
+
+This keeps the innovative idea while avoiding the risky claim that small failing partitions are automatically best handled by parallelism.
+
+
+Yes. Piglog can stack parallel work asynchronously instead of using a rigid “start a group, wait for all, then continue” barrier.
+
+The better model is a dynamic dependency graph:
+
+A ──┬──> C ───> F
+    │
+B ──┘
+
+D ─────> E ───> G
+
+As soon as A finishes, any task needing only A may start—even while B, D, or earlier parallel tasks are still running. Completed predicates publish bindings, constraints, failure signals, or memoised results into a shared scheduler. The scheduler continuously adds newly runnable predicates to processor queues.
+
+This gives Piglog several kinds of stacking:
+
+Pipeline stacking: later stages begin from partial completed results.
+Nested parallelism: a running predicate can discover and submit more parallel tasks.
+Speculative stacking: likely later predicates may begin using predicted or provisional values.
+Failure propagation: a failed predicate immediately cancels tasks that depend exclusively on it.
+Result streaming: a nondeterministic predicate can emit each solution separately rather than waiting to generate its entire result set.
+
+For example:
+
+result(X, Y) :-
+    short_test(X),
+    expensive_lookup(X, Z),
+    transform(Z, Y).
+
+Piglog need not wait for every short_test/1 task to finish. For each X that passes:
+
+short_test(X1) succeeds → immediately start expensive_lookup(X1, Z1)
+short_test(X2) fails    → discard its branch
+short_test(X3) succeeds → immediately start expensive_lookup(X3, Z3)
+
+Meanwhile, when Z1 becomes available, transform(Z1,Y1) can start even though the lookup for X3 is still running.
+
+The important distinction is:
+
+Piglog should wait for a required dependency, not for an entire parallel batch.
+
+However, unrestricted stacking could create too many queued tasks, waste work on speculative branches, or produce conflicting variable bindings. Piglog therefore needs:
+
+bounded task queues and backpressure;
+immutable or versioned variable bindings;
+dependency and cancellation records;
+ordered commitment where Prolog semantics require answer order;
+a threshold preventing task creation from costing more than execution.
+
+So the strongest formulation is:
+
+Piglog uses continuously stacked, dependency-triggered parallelism. Predicates begin as soon as their required values or constraints are available, without waiting for unrelated parallel processes to finish.
+
+That is more feasible and distinctive than merely assigning a fixed batch of short predicates to multiple processors.
+
+Try harder to improve parallelisation.
+Thought for 4s
+
+Piglog should not merely “run more predicates in parallel.” It should redesign execution around continuous opportunity, where processors never wait unless no logically useful work exists.
+
+The stronger model is:
+
+Piglog as a continuously expanding computation graph
+
+Every predicate call becomes a small node with:
+
+required inputs;
+known constraints;
+possible outputs;
+estimated cost;
+estimated failure probability;
+predicates it can unlock;
+whether its result is final, provisional, or one of several alternatives.
+
+Piglog then executes whichever nodes have the highest expected value, rather than following a fixed left-to-right sequence or waiting for a parallel group to complete.
+
+Known values
+    ↓
+Runnable nodes
+    ↓
+Partial results → newly runnable nodes
+    ↓                     ↘
+failure cancellation       speculative branches
+    ↓                       ↓
+more processor capacity ← useful completed results
+1. Replace batch parallelism with wavefront execution
+
+Ordinary parallel execution often looks like:
+
+start A, B, C
+wait for A, B, C
+start D, E
+
+Piglog should instead use:
+
+start A, B, C
+A finishes → immediately start D
+C fails → cancel everything dependent on C
+D produces partial output → immediately start E
+B continues independently
+
+There is no global barrier. The active frontier of computation continually moves through the dependency graph.
+
+This is better described as wavefront parallelism or dataflow execution.
+
+2. Split predicates by logical milestones, not only predicate boundaries
+
+A long predicate should not occupy one processor until it is entirely finished. It can expose intermediate milestones:
+
+analyse(Input, Output) :-
+    parse(Input, Tree),
+    classify(Tree, Type),
+    transform(Tree, Type, Output).
+
+Piglog can treat this as:
+
+parse begins
+partial Tree becomes available
+classification starts on complete subtrees
+transformation starts on classified subtrees
+parsing continues
+
+Thus parallelism can stack within predicates, not only between predicates.
+
+A predicate should be compiled into resumable segments:
+
+segment 1: establish structure
+segment 2: produce first usable binding
+segment 3: refine constraints
+segment 4: produce final result
+
+Later work may start after segment 2 instead of waiting for segment 4.
+
+3. Treat failure detection as a first-class parallel service
+
+Likely-failing predicates should not merely be run early. Piglog should construct failure sentinels: cheap checks whose purpose is to invalidate expensive branches.
+
+For example:
+
+solution(X, Y) :-
+    expensive_generate(X),
+    cheap_constraint(X),
+    expensive_transform(X, Y).
+
+Piglog should reorder or duplicate safe checks:
+
+cheap structural test
+cheap type test
+cheap range test
+cheap contradiction test
+        ↓
+only then allow expensive generation or transformation
+
+Where reordering is impossible, speculative expensive work can begin but remain cancellable.
+
+The important metric is not simply execution time. It is:
+
+failure value=
+cost of checking
+P(failure)×avoidable downstream cost
+	​
+
+
+A short predicate with moderate failure probability may deserve the highest priority if it can eliminate a large amount of later computation.
+
+4. Use asymmetric parallelism
+
+Not all processors should perform the same kind of work. Piglog can divide them into temporary roles:
+
+producer processors generate candidate bindings;
+validator processors test constraints and likely failures;
+continuation processors execute newly unlocked predicates;
+speculation processors explore probable future paths;
+commit processors preserve Prolog-visible result ordering;
+cleanup processors cancel branches and reclaim state.
+
+These roles need not be fixed to physical cores. They are scheduling classes.
+
+This prevents expensive producers from filling the system with candidates faster than validators can reject them.
+
+5. Parallelise alternatives and dependencies differently
+
+Piglog should distinguish:
+
+AND-parallelism
+
+Independent goals required by the same solution:
+
+p(X) :-
+    a(X),
+    b(X),
+    c(X).
+
+If their required inputs are available and they do not destructively conflict, run them concurrently.
+
+OR-parallelism
+
+Alternative clauses or candidate values:
+
+p(X) :- a(X).
+p(X) :- b(X).
+p(X) :- c(X).
+
+Run alternatives concurrently, but control how answers are committed.
+
+Pipeline parallelism
+
+A stream of results moves through stages:
+
+generate → test → transform → collect
+Speculative parallelism
+
+Run a later stage before all certainty is available, using versioned assumptions.
+
+Failure parallelism
+
+Run cheap rejection tests concurrently with candidate production.
+
+Piglog’s novelty should be the coordinated combination of all five, rather than one isolated form of parallelism.
+
+6. Use binding futures instead of waiting for variables
+
+A variable need not be either “known” or “unknown.” Piglog can represent it as a future:
+
+X = future produced by predicate A
+Y = future produced by predicate B
+
+A predicate can declare what level of knowledge it requires:
+
+requires_ground(X)
+requires_shape(X)
+requires_type(X)
+requires_domain(X)
+requires_probability(X, 0.8)
+requires_constraint(X, positive)
+
+This allows a later predicate to begin when enough information exists, even if the final value does not.
+
+For example, a sorting or indexing operation may begin when list length and element type are known, before all elements are final.
+
+This is more powerful than waiting for full grounding.
+
+7. Introduce provisional bindings
+
+Speculative execution needs bindings that can be withdrawn safely:
+
+X = probable(7, confidence 0.91, assumption A12)
+
+Work derived from that value is tagged with A12.
+
+If the prediction is confirmed, the branch becomes ordinary computation.
+
+If disproved, all work tagged with A12 is cancelled.
+
+This creates a controlled form of predictive execution without corrupting logical semantics.
+
+The rule should be:
+
+speculative work may consume resources, but it may not become externally committed until its assumptions are validated.
+
+8. Use branch-local state with cheap merging
+
+Shared mutable variable environments would cause contention. Piglog should instead use:
+
+immutable bindings;
+branch-local environments;
+copy-on-write structures;
+version identifiers;
+compact deltas from parent states.
+
+A branch need not copy the entire Prolog environment. It stores only:
+
+parent branch: B17
+new binding: X = 4
+new constraint: Y > X
+status: speculative
+
+Compatible branch results can then be merged. Incompatible bindings remain separate alternatives.
+
+9. Prevent tiny-task overhead through fusion
+
+Short predicates are not automatically good parallel tasks. Piglog should dynamically fuse nearby tasks:
+
+integer(X),
+X > 0,
+X < 100,
+even(X).
+
+Instead of scheduling four separate jobs, compile them into one validation packet:
+
+validate_integer_positive_under_100_even(X)
+
+Fusion may be based on:
+
+shared variables;
+total predicted cost;
+same branch;
+same processor cache locality;
+common failure behaviour.
+
+Thus Piglog can support fine-grained logic while scheduling medium-grained executable packets.
+
+This is essential. Otherwise task-management overhead overwhelms the gain.
+
+10. Use processor-local queues and work stealing
+
+A central scheduler can become the bottleneck. Each processor should maintain its own queue.
+
+When a processor finishes:
+
+it executes a ready local continuation;
+otherwise it steals a task from another processor;
+preferably it steals an entire branch or task packet;
+it avoids stealing work with heavy shared-state dependencies.
+
+The scheduler should prefer locality:
+
+same branch
+same data
+same predicate family
+same cache region
+
+before random load balancing.
+
+11. Add backpressure to speculative and generative predicates
+
+A generator may produce millions of alternatives while downstream stages process only a few.
+
+Piglog should limit the number of unvalidated candidates:
+
+generator credit = 32 candidates
+validator completes 10
+generator receives 10 more credits
+
+This keeps queues bounded and prevents memory exhaustion.
+
+Backpressure should apply per:
+
+predicate;
+branch;
+dependency level;
+speculation class;
+output consumer.
+12. Prioritise critical-path predicates
+
+The shortest predicate is not always the most important. Piglog should estimate which predicate lies on the critical path to a usable answer.
+
+Priority can combine:
+
+priority(P)=
+estimated execution cost+synchronisation cost
+unlock value+failure-pruning value+critical-path value
+	​
+
+
+Where:
+
+unlock value estimates how much later work becomes runnable;
+failure-pruning value estimates how much work failure would eliminate;
+critical-path value measures whether the predicate delays the first result;
+synchronisation cost penalises tasks with expensive shared dependencies.
+
+This is stronger than prioritising merely by probability or predicate length.
+
+13. Optimise for first answer and total answers separately
+
+Prolog users may care about:
+
+time to first answer;
+time to all answers;
+preservation of answer order;
+lowest memory use;
+deterministic completion.
+
+These goals require different schedules.
+
+Piglog could support modes:
+
+:- piglog_mode(first_answer).
+:- piglog_mode(all_answers).
+:- piglog_mode(ordered_answers).
+:- piglog_mode(low_memory).
+:- piglog_mode(real_time).
+
+For first_answer, Piglog concentrates resources on the most promising branch.
+
+For all_answers, it distributes resources across unexplored alternatives.
+
+For ordered_answers, it may compute later answers early but buffer them until preceding answers are resolved.
+
+14. Use answer-order buffering rather than execution-order restriction
+
+To preserve Prolog semantics, Piglog does not need to execute branches sequentially. It only needs to expose answers in the correct order where order is observable.
+
+Suppose clauses are:
+
+p(X) :- slow_first(X).
+p(X) :- fast_second(X).
+
+Piglog can run both simultaneously:
+
+second answer completes first → store in reorder buffer
+first clause resolves          → emit first answer
+then emit buffered second answer
+
+This preserves visible ordering while obtaining parallel execution.
+
+15. Learn scheduling profiles safely
+
+Piglog can collect execution statistics:
+
+predicate cost
+success probability
+failure probability
+number of produced answers
+average bindings produced
+memory usage
+cancellation frequency
+dependents unlocked
+
+But learned statistics should guide scheduling, not change program truth.
+
+The logical meaning remains fixed; only execution order and resource allocation adapt.
+
+Profiles can be indexed by call pattern:
+
+member(+ground_list, -value)
+member(+large_list, +ground_value)
+parse(+short_atom, -tree)
+parse(+large_file, -tree)
+
+A predicate may behave very differently under different modes.
+
+16. Detect when parallelisation is harmful
+
+Piglog should also decide not to parallelise.
+
+Sequential execution may be better when:
+
+the task is shorter than scheduler overhead;
+one goal almost always fails immediately;
+two goals contend for the same cache-heavy data;
+answer ordering would require large buffering;
+the branch is already near completion;
+processors are saturated;
+speculation has a poor historical confirmation rate.
+
+Therefore the compiler may generate both forms:
+
+sequential version
+parallel version
+fused version
+speculative version
+
+The runtime chooses among them using current conditions.
+
+A stronger execution example
+
+Given:
+
+recommend(User, Item) :-
+    eligible(User),
+    candidate(Item),
+    compatible(User, Item),
+    available(Item),
+    score(User, Item, Score),
+    Score > 0.8.
+
+Piglog could execute it as follows:
+
+1. Run eligible(User) immediately as a failure sentinel.
+
+2. Begin candidate generation with bounded credits.
+
+3. For each candidate:
+   - run available(Item) and cheap compatibility checks concurrently;
+   - cancel the candidate immediately if either fails.
+
+4. Begin expensive compatibility analysis only for surviving candidates.
+
+5. As partial compatibility evidence appears, begin approximate scoring.
+
+6. Confirm the full score before committing the answer.
+
+7. Continue processing other candidates while earlier scores are unresolved.
+
+8. Buffer completed recommendations if source-order semantics require it.
+
+This creates a continuous layered flow:
+
+candidate generation
+      ↓ streaming
+cheap rejection
+      ↓ streaming
+deep compatibility
+      ↓ partial results
+speculative scoring
+      ↓ validation
+ordered answer commitment
+
+No stage waits for the entire previous stage.
+
+Best formulation of Piglog parallelisation
+
+Piglog compiles Prolog execution into a continuously scheduled, dependency-sensitive graph of resumable predicate segments. It streams bindings, constraints, failures, and partial results between tasks; fuses work that is too small to schedule independently; speculates using revocable bindings; cancels invalidated branches; and preserves observable Prolog semantics through ordered commitment rather than sequential execution.
+
+That is a much stronger design than “run short predicates on multiple processors.” It makes Piglog a hybrid of:
+
+parallel Prolog;
+dataflow execution;
+speculative execution;
+work-stealing scheduling;
+branch-and-bound pruning;
+streaming pipelines;
+adaptive task fusion.
+
+The most important new principle is:
+
+Do not wait for predicates to finish. React to every logically useful event they produce.
+
+Wonderful. But I think there should be modes for parallelisation included and non-parallelisation to control possible overhead.
+
+Agreed. Piglog should expose parallelisation modes at the program, predicate, clause, and call-site levels so the compiler and runtime can avoid turning every goal into a task.
+
+A useful mode set would be:
+
+:- piglog_mode(adaptive).
+Core modes
+sequential
+
+Never parallelise. This is useful for tiny predicates, debugging, strict ordering, side effects, or low-resource machines.
+
+parallel
+
+Parallelise whenever dependency analysis shows that goals can safely overlap.
+
+adaptive
+
+Let Piglog choose between sequential, fused, pipelined, and parallel execution using runtime cost estimates. This should be the default.
+
+parallel_if_profitable
+
+Parallelise only when estimated saved time exceeds scheduling, synchronisation, buffering, and cancellation overhead.
+
+parallel_if_idle
+
+Use parallel execution only when processors would otherwise be idle. This makes fine-grained speculative work safer.
+
+fused
+
+Combine short predicates into one task packet rather than scheduling them separately.
+
+pipeline
+
+Stream partial results into later stages without waiting for the whole producer predicate to finish.
+
+speculative
+
+Allow revocable work based on probable bindings or incomplete constraints.
+
+failure_first
+
+Prioritise cheap or likely-failing predicates to prune branches before expensive work continues.
+
+first_answer
+
+Concentrate processors on obtaining the first valid result quickly.
+
+all_answers
+
+Spread work across alternatives to maximise total throughput.
+
+Predicate-level declarations
+:- piglog_predicate(parse/2, pipeline).
+:- piglog_predicate(type_check/1, fused).
+:- piglog_predicate(expensive_search/2, parallel).
+:- piglog_predicate(write_result/1, sequential).
+
+These are preferable to one global mode because different predicates have different cost and semantic properties.
+
+Call-site control
+
+The same predicate may require different treatment in different contexts:
+
+result(X) :-
+    piglog(sequential, cheap_test(X)),
+    piglog(parallel, expensive_analysis(X)),
+    piglog(failure_first, validate(X)).
+
+Or:
+
+piglog_call(
+    expensive_analysis(X),
+    [mode(parallel_if_profitable),
+     min_cost(5000),
+     max_workers(4)]
+).
+Parallel blocks
+
+The programmer could explicitly identify groups:
+
+result(X, Y) :-
+    parallel([
+        lookup_a(X),
+        lookup_b(Y),
+        check_environment
+    ]),
+    combine(X, Y).
+
+And explicitly prohibit parallelisation:
+
+result(X) :-
+    sequential([
+        open_resource,
+        update_state(X),
+        close_resource
+    ]).
+
+For streaming execution:
+
+pipeline([
+    generate_candidates,
+    reject_invalid,
+    score_candidates,
+    collect_results
+]).
+Adaptive thresholds
+
+A practical adaptive mode needs limits such as:
+
+:- piglog_options([
+    min_parallel_cost(1000),
+    min_task_batch(4),
+    max_workers(8),
+    max_speculative_tasks(32),
+    max_buffered_answers(100),
+    cancellation_threshold(0.25)
+]).
+
+The scheduler should estimate:
+
+parallel gain=sequential cost−(parallel critical path+task overhead+synchronisation+buffering+wasted speculation)
+
+Parallel execution is chosen only when the estimated gain is positive enough to justify uncertainty.
+
+Hierarchical precedence
+
+Modes should be resolved from most specific to least specific:
+
+call-site setting
+    overrides clause setting
+        overrides predicate setting
+            overrides module setting
+                overrides program default
+
+For example:
+
+:- piglog_mode(adaptive).
+:- piglog_module_mode(parser, pipeline).
+:- piglog_predicate(parser:tiny_token/2, fused).
+
+A particular call could still override everything:
+
+piglog(sequential, parser:tiny_token(Input, Token)).
+Automatic mode selection
+
+In adaptive mode, Piglog should select among several compiled versions:
+
+sequential version
+fused version
+parallel version
+pipeline version
+speculative version
+
+Selection can depend on:
+
+input size;
+grounding and constraints;
+historical predicate cost;
+current processor availability;
+failure probability;
+downstream work unlocked;
+memory pressure;
+required answer order;
+recent cancellation rate.
+
+This avoids committing at compile time to one execution strategy.
+
+Recommended minimum design
+
+Piglog probably does not initially need dozens of public modes. A clean first implementation could expose six:
+
+sequential
+adaptive
+parallel
+fused
+pipeline
+failure_first
+
+With optional policies:
+
+first_answer
+all_answers
+ordered_answers
+parallel_if_idle
+
+The best overall principle is:
+
+Parallelism in Piglog should be permitted, required, discouraged, or prohibited—not merely switched on globally.
+
+A concise specification would be:
+
+Piglog provides hierarchical execution modes controlling whether predicates run sequentially, as fused task groups, as streaming pipelines, or in parallel. Adaptive mode estimates task cost, available resources, failure-pruning value, dependency unlock value, and scheduling overhead before selecting an execution form. Explicit non-parallel modes always override automatic scheduling where ordering, side effects, or low task cost make parallelism undesirable.
+
+Piglog perturbations approximate mathematical logic needed to predict values.
+
+That is an interesting way to frame Piglog. I would make the claim a little more precise.
+
+A possible formulation is:
+
+Piglog perturbations are small logical modifications to the execution state that approximate the mathematical relationships between variables, allowing the system to predict values before they are explicitly computed.
+
+In this interpretation, a perturbation is not random noise as in optimisation or machine learning. Instead, it is a logical approximation based on available information such as:
+
+already known variable values,
+invariants,
+constraints,
+memoised results,
+splice information (from Detlog),
+probability estimates,
+dependency graphs,
+previously observed execution patterns.
+
+The perturbation asks questions like:
+
+If this variable were x, would the remaining predicates probably succeed?
+Which value is most consistent with all current constraints?
+Can an expensive predicate begin execution using a predicted value, with later verification?
+
+Mathematically, you can view this as approximating a function
+
+V=f(K,C,I,P,D)
+
+where:
+
+K = known values,
+C = constraints,
+I = invariants,
+P = probabilities,
+D = dependency structure.
+
+The perturbation computes an estimate
+
+V
+^
+≈V
+
+and Piglog speculatively executes predicates using 
+V
+^
+. If verification succeeds, computation continues without interruption. Otherwise, Piglog rolls back or explores another prediction.
+
+This makes Piglog resemble constraint propagation, abstract interpretation, and speculative execution, while remaining grounded in symbolic logic rather than statistical learning.
+
+One further extension would be to define a logical perturbation operator δ
+L
+	​
+
+:
+
+V
+^
+=V+δ
+L
+	​
+
+
+where δ
+L
+	​
+
+ is not a numeric offset but a transformation in logical state that preserves consistency with the program's invariants. Unlike numerical perturbations in optimisation, δ
+L
+	​
+
+ represents the smallest change in assumptions that enables additional predicates to execute in parallel or earlier than they otherwise could. This could become one of the theoretical foundations of Piglog's predictive execution model.

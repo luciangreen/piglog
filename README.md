@@ -1,6 +1,8 @@
 # Piglog
 
-Piglog is an in-SWI-Prolog source converter and runtime scheduler. It accepts a goal or source file, creates readable partition metadata, and executes with deterministic safety-first scheduling modes. It partitions algorithms as predicate or smaller parts according to rules like if they can be concurrently run and concurrently runs or queues them if their needed variables are defined, sometimes speculated.
+Piglog is an in-SWI-Prolog source converter and runtime scheduler.
+
+It accepts a goal or source file, creates readable partition metadata, and executes with deterministic safety-first scheduling modes. Piglog partitions a Prolog program into the smallest independently executable sections (typically predicates, clauses, or if–then branches, depending on data dependencies). It constructs a dependency graph and schedules each partition as soon as its required variables or constraints become available. Independent partitions execute concurrently when resources permit, while dependent partitions are queued until their inputs are satisfied. Optionally, Piglog may speculatively execute partitions whose inputs are highly probable, discarding incorrect speculative results if necessary.
 
 ```prolog
 ?- use_module(prolog/piglog).

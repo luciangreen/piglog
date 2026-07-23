@@ -1242,3 +1242,1142 @@ When uncertain, Piglog must:
 3. preserve logical answer order;
 4. execute sequentially;
 5. explain the fallback when tracing is enabled.
+
+⸻
+
+Additional Piglog Requirements: Cross-Partition Term Reassembly
+
+42. Purpose
+
+Piglog must support the reconstruction of logical answers from values, bindings, constraints, partial terms, streams, and alternative results produced by separate partitions.
+
+This feature is called cross-partition term reassembly.
+
+Term reassembly must preserve ordinary Prolog semantics. It must not merely concatenate worker outputs or combine values according to completion order.
+
+Piglog must reconstruct results according to:
+
+* the original goal and clause structure;
+* shared logical-variable identities;
+* the value-dependency graph;
+* branch and answer provenance;
+* unification compatibility;
+* constraint compatibility;
+* confirmation or speculation status;
+* required logical answer order.
+
+The central rule is:
+
+Partition outputs may be computed separately, but they must be integrated as if the accepted Prolog computation had produced them in one logically consistent variable environment.
+
+⸻
+
+43. Terminology
+
+Piglog must distinguish the following concepts.
+
+Partition result
+
+A partition result is the output produced by one execution of a partition.
+
+It may include:
+
+* variable bindings;
+* generated constraints;
+* partial terms;
+* stream items;
+* branch identity;
+* answer identity;
+* verification state;
+* provenance information;
+* failure information.
+
+Logical environment
+
+A logical environment records the bindings and constraints associated with one possible logical answer.
+
+Parent environment
+
+The environment from which a partition execution was derived.
+
+Result integration
+
+The process of merging a partition result into a compatible parent or sibling environment.
+
+Term assembly
+
+The process of reconstructing an enclosing term from the integrated environment.
+
+Environment product
+
+The compatible combination of alternative results produced by independent nondeterministic partitions.
+
+Provisional environment
+
+An isolated environment containing one or more unverified speculative values.
+
+Confirmed environment
+
+An environment whose required values and constraints have passed verification.
+
+⸻
+
+44. Partition-result representation
+
+Every executed partition must return a structured result rather than relying solely on hidden worker-local variable bindings.
+
+A suggested representation is:
+
+piglog_partition_result(
+    ResultId,
+    PartitionId,
+    ParentEnvironmentId,
+    BranchId,
+    AnswerId,
+    Bindings,
+    Constraints,
+    PartialTerms,
+    StreamOutputs,
+    Status,
+    Provenance,
+    VerificationDependencies
+).
+
+The fields have the following meanings:
+
+* ResultId: unique result identifier;
+* PartitionId: partition that produced the result;
+* ParentEnvironmentId: environment from which execution began;
+* BranchId: source or transformed branch identity;
+* AnswerId: logical answer-path identity;
+* Bindings: variable-to-value bindings;
+* Constraints: constraints introduced or refined;
+* PartialTerms: enclosing or nested terms partially instantiated by the result;
+* StreamOutputs: zero or more produced stream items;
+* Status: confirmed, provisional, failed, cancelled, or rejected;
+* Provenance: source partition, prediction, perturbation, cache, formula, or input source;
+* VerificationDependencies: predictions or perturbations that must be verified.
+
+An implementation may use a different internal term if it preserves equivalent information.
+
+⸻
+
+45. Stable logical-variable identity
+
+Variables shared across partitions must have stable identities independent of worker-local Prolog variables.
+
+The converter must assign logical-variable identifiers during partition generation.
+
+Example:
+
+report(Input, report(Profile, Risk, Value)) :-
+    build_profile(Input, Profile),
+    assess_risk(Profile, Risk),
+    calculate_value(Input, Value).
+
+Possible logical identifiers:
+
+logical_variable(v_input, Input).
+logical_variable(v_profile, Profile).
+logical_variable(v_risk, Risk).
+logical_variable(v_value, Value).
+
+Partition bindings may then be represented as:
+
+[v_profile-profile(alice, 35)]
+
+rather than relying on a worker-local variable address.
+
+Stable logical-variable identity is required for:
+
+* result merging;
+* conflict detection;
+* rollback;
+* tracing;
+* replay;
+* caching;
+* answer-order preservation.
+
+⸻
+
+46. Environment representation
+
+Piglog must maintain explicit logical environments.
+
+Suggested representation:
+
+piglog_environment(
+    EnvironmentId,
+    ParentEnvironmentId,
+    BranchPath,
+    Bindings,
+    Constraints,
+    TermFragments,
+    VerificationState,
+    Status
+).
+
+Possible statuses:
+
+active
+waiting
+provisional
+confirmed
+failed
+rejected
+cancelled
+superseded
+
+Environments should be treated as immutable snapshots where practical.
+
+A merge should create a new environment rather than destructively modifying a confirmed environment.
+
+⸻
+
+47. Basic binding integration
+
+When a partition produces a binding, Piglog must integrate it with the current logical environment using Prolog-compatible unification.
+
+Example:
+
+P1: X = person(alice, Age)
+P2: Age = 35
+
+The merged environment must entail:
+
+X = person(alice, 35)
+
+Piglog must not treat the outputs as unrelated values.
+
+Equivalent conceptual operation:
+
+merge_bindings(
+    [x-person(alice, age_var)],
+    [age_var-35],
+    [x-person(alice, 35), age_var-35]
+).
+
+The implementation must preserve:
+
+* aliases between variables;
+* repeated variable occurrences;
+* nested terms;
+* attributed variables where supported;
+* rational-tree policy consistent with the selected SWI-Prolog semantics.
+
+⸻
+
+48. Binding-conflict detection
+
+If two partition results bind the same logical variable incompatibly, they must not be merged into one answer environment.
+
+Example:
+
+P1: Age = 35
+P2: Age = 40
+
+The merge must fail for that combination.
+
+The runtime must classify the conflict as one of:
+
+ordinary_logical_failure
+branch_incompatibility
+constraint_conflict
+speculation_mismatch
+internal_reassembly_error
+
+An ordinary incompatibility between nondeterministic alternatives is not an internal error.
+
+A conflict caused by an incorrect speculative value must trigger speculative invalidation and rollback.
+
+⸻
+
+49. Constraint integration
+
+Partition constraints must be merged using the appropriate constraint solver rather than treated as plain metadata.
+
+Example:
+
+P1: X #> 10
+P2: X #< 20
+
+The integrated environment must contain the conjunction:
+
+X #> 10,
+X #< 20
+
+If a third result adds:
+
+X #= 25
+
+that environment must fail.
+
+Piglog must support a conservative initial set of constraint systems, such as:
+
+* CLP(FD);
+* CLP(Q);
+* CLP(R);
+* dif constraints;
+* ordinary unification constraints.
+
+Unsupported attributed-variable systems must cause:
+
+* sequential fallback;
+* isolated execution;
+* or an explicit unsupported-feature diagnostic.
+
+⸻
+
+50. Term templates
+
+The converter must retain templates for terms that are assembled from partition outputs.
+
+Example source:
+
+make_item(Input, item(Name, Price, Category)) :-
+    determine_name(Input, Name),
+    determine_price(Input, Price),
+    determine_category(Input, Category).
+
+Suggested generated metadata:
+
+piglog_term_template(
+    template_item,
+    item(
+        logical_var(v_name),
+        logical_var(v_price),
+        logical_var(v_category)
+    ),
+    [v_name, v_price, v_category]
+).
+
+Once all required variables are available, Piglog may assemble:
+
+item(Name, Price, Category)
+
+The term may also remain partially instantiated where the original semantics permit that result.
+
+⸻
+
+51. Partial-term assembly
+
+Piglog must support incremental term assembly.
+
+Example:
+
+Result = report(Header, Body, Footer)
+
+The environment may evolve as follows:
+
+report(_Header, _Body, _Footer)
+report(title("Piglog"), _Body, _Footer)
+report(title("Piglog"), analysis(Data), _Footer)
+report(title("Piglog"), analysis(Data), references(Refs))
+
+A downstream partition may begin when the subterm it requires becomes available, without waiting for unrelated fields.
+
+Example:
+
+format_header(Header, FormattedHeader)
+
+may run after Header is produced even if Body and Footer remain unavailable.
+
+Partial assembly must not incorrectly imply that the whole answer is confirmed.
+
+⸻
+
+52. Required versus optional term components
+
+A term template must identify which components are required before:
+
+* beginning downstream computation;
+* constructing a provisional enclosing term;
+* confirming the final answer.
+
+Suggested representation:
+
+piglog_term_requirement(
+    TemplateId,
+    Purpose,
+    RequiredVariables
+).
+
+Example:
+
+piglog_term_requirement(
+    template_report,
+    provisional_construction,
+    [v_header]
+).
+piglog_term_requirement(
+    template_report,
+    final_confirmation,
+    [v_header, v_body, v_footer]
+).
+
+This permits early partial execution without premature answer commitment.
+
+⸻
+
+53. Reassembly partitions
+
+Piglog may generate explicit reassembly partitions.
+
+Example:
+
+piglog_partition(
+    assemble_report,
+    goal(assemble_term(template_report, Report)),
+    inputs([v_profile, v_risk, v_value]),
+    outputs([v_report]),
+    purity(pure),
+    minimum_readiness(5),
+    scheduling_class(reassembly)
+).
+
+A reassembly partition must generally be lightweight and should normally execute:
+
+* in the scheduler thread;
+* in a parent worker;
+* or fused with the final consuming partition.
+
+It should not automatically become a separate thread unless assembly is expensive.
+
+⸻
+
+54. Environment products for nondeterministic partitions
+
+Where independent partitions produce multiple alternatives, Piglog must form compatible products of their result environments.
+
+Example:
+
+colour(red).
+colour(blue).
+size(small).
+size(large).
+item(item(Colour, Size)) :-
+    colour(Colour),
+    size(Size).
+
+Independent results:
+
+Colour environments:
+C1: Colour = red
+C2: Colour = blue
+Size environments:
+S1: Size = small
+S2: Size = large
+
+The conjunction requires the compatible product:
+
+item(red, small)
+item(red, large)
+item(blue, small)
+item(blue, large)
+
+Piglog must not return only same-position combinations such as:
+
+item(red, small)
+item(blue, large)
+
+unless the original program imposes that correspondence.
+
+⸻
+
+55. Compatible join operation
+
+Piglog must provide an internal compatible-join operation.
+
+Conceptual interface:
+
+piglog_join_results(
+    LeftResults,
+    RightResults,
+    JoinSpecification,
+    JoinedResults
+).
+
+The join must consider:
+
+* shared logical variables;
+* branch identity;
+* clause identity;
+* constraints;
+* cut or committed-choice boundaries;
+* Detlog splice metadata where available;
+* answer policy;
+* source-order metadata;
+* speculation status.
+
+Independent partitions with no shared variables may form a Cartesian product when required by conjunction semantics.
+
+Partitions with shared variables must use unification-compatible joins.
+
+⸻
+
+56. Avoiding unnecessary Cartesian products
+
+Piglog must avoid constructing full Cartesian products when:
+
+* a shared variable permits indexed joining;
+* a constraint filters alternatives;
+* downstream computation can consume results incrementally;
+* only the first ordered answer is required;
+* Detlog splice metadata already provides grouped combinations;
+* a failure-first predicate can eliminate alternatives early.
+
+Example:
+
+person(Id, Name).
+account(Id, Balance).
+
+Results should be joined on Id rather than forming every person-account pair.
+
+Suggested indexing:
+
+result_index(PartitionId, LogicalVariableId, ValueKey, ResultId).
+
+⸻
+
+57. Detlog splice integration
+
+When input has been transformed by Detlog, Piglog should use explicit splice metadata rather than reconstructing hidden nondeterministic relationships from scratch.
+
+Piglog must distinguish:
+
+* independent partition joining;
+* Detlog branch splicing;
+* ordinary term construction;
+* stream aggregation;
+* answer collection.
+
+Suggested metadata:
+
+piglog_splice_input(
+    SpliceId,
+    SourcePartitions,
+    KeyVariables,
+    OutputTemplate,
+    OrderingPolicy
+).
+
+Detlog determines which branch outputs form logical combinations.
+
+Piglog determines:
+
+* when source partitions run;
+* whether their results are pipelined;
+* whether combinations are produced incrementally;
+* whether speculation is safe;
+* when assembled answers may be committed.
+
+⸻
+
+58. Clause and branch provenance
+
+Every partition result must preserve the clause and branch path from which it originated.
+
+Suggested path:
+
+branch_path([
+    clause(entry/2, 1),
+    if_branch(condition_4, then),
+    alternative(choice_7, 2)
+]).
+
+Results from mutually exclusive branches must not be merged.
+
+Example:
+
+classify(X, Result) :-
+    ( X > 0 ->
+        Result = positive(X)
+    ;
+        Result = non_positive(X)
+    ).
+
+A positive(X) fragment must not be combined with bindings originating from the else branch.
+
+⸻
+
+59. Cut and committed-choice boundaries
+
+Cross-partition reassembly must preserve cuts, once-only execution, and committed-choice semantics.
+
+When a cut commits to a clause or alternative:
+
+* results from excluded alternatives must be cancelled or ignored;
+* environments belonging to excluded alternatives must not be assembled;
+* already completed speculative results from excluded alternatives must remain uncommitted;
+* answer-order metadata must reflect the commitment.
+
+Where cut behaviour cannot be represented safely, Piglog must isolate the affected region or fall back to source-order execution.
+
+⸻
+
+60. Answer identity and ordering
+
+Every candidate assembled answer must have an answer identity independent of worker completion order.
+
+Suggested representation:
+
+piglog_answer_key(
+    AnswerId,
+    ClauseOrder,
+    AlternativeOrder,
+    GeneratorIndices,
+    BranchPath
+).
+
+For:
+
+answers(ordered)
+
+Piglog may compute later answers early but must not present them before earlier valid answers are resolved.
+
+For:
+
+answers(first)
+
+Piglog may stop after the first valid answer in accepted logical order, not merely the first assembled result to finish.
+
+For:
+
+answers(completion_order)
+
+confirmed answers may be returned in completion order only when explicitly requested.
+
+⸻
+
+61. Speculative term assembly
+
+Piglog may assemble provisional terms from confirmed and speculative components.
+
+Example:
+
+Profile: confirmed
+Risk: predicted
+Value: confirmed
+
+The runtime may construct:
+
+report(Profile, PredictedRisk, Value)
+
+with status:
+
+provisional
+
+The term must retain links to all unverified dependencies.
+
+Suggested representation:
+
+piglog_assembled_term(
+    TermId,
+    TemplateId,
+    Term,
+    EnvironmentId,
+    provisional,
+    [prediction_7]
+).
+
+It must not be returned as a confirmed logical answer.
+
+⸻
+
+62. Speculative-component verification
+
+When a speculative component is verified, Piglog must update or replace the provisional environment.
+
+If:
+
+PredictedRisk = low
+
+and verification confirms:
+
+ActualRisk = low
+
+the environment may be promoted to confirmed after all other requirements are satisfied.
+
+If verification returns:
+
+ActualRisk = high
+
+Piglog must:
+
+1. invalidate the provisional term;
+2. cancel downstream partitions derived exclusively from it;
+3. preserve unaffected confirmed components;
+4. insert the confirmed value;
+5. reassemble the term;
+6. rerun only affected downstream partitions.
+
+Reassembly should therefore support partial rollback rather than recomputing unrelated confirmed partitions.
+
+⸻
+
+63. Reassembly dependency tracking
+
+Every assembled term must record which partition results contributed to it.
+
+Example:
+
+piglog_term_provenance(
+    TermId,
+    [
+        component(v_profile, result_11),
+        component(v_risk, result_18),
+        component(v_value, result_14)
+    ]
+).
+
+This information is required for:
+
+* selective invalidation;
+* explanation;
+* debugging;
+* caching;
+* benchmark measurements;
+* correctness checking.
+
+⸻
+
+64. Reassembly after rollback
+
+After rollback, Piglog must invalidate only terms dependent on rejected results.
+
+Example:
+
+Profile result: confirmed
+Value result: confirmed
+Risk result: rejected prediction
+Report term: provisional
+
+The runtime should preserve Profile and Value, recompute only Risk, and reconstruct Report.
+
+It should not rerun unrelated confirmed partitions unless their dependencies were also invalidated.
+
+⸻
+
+65. Stream-fragment assembly
+
+Pipeline partitions may produce fragments of a larger list, tree, report, or stream.
+
+Piglog must distinguish:
+
+* logical lists whose order is semantically significant;
+* unordered collections;
+* keyed fragments;
+* incremental tree nodes;
+* open-ended streams.
+
+Example ordered fragments:
+
+fragment(1, first).
+fragment(2, second).
+fragment(3, third).
+
+must assemble as:
+
+[first, second, third]
+
+even if fragment 3 finishes first.
+
+For explicitly unordered results, Piglog may avoid unnecessary sorting.
+
+⸻
+
+66. Difference lists and incremental list construction
+
+For list-producing pipelines, Piglog should support difference-list or equivalent append-efficient assembly.
+
+Example:
+
+Chunk1-Tail1
+Chunk2-Tail2
+Chunk3-[]
+
+The runtime may link compatible chunks without repeatedly traversing completed prefixes.
+
+Generated code must hide implementation details unless tracing or code output is requested.
+
+The assembled result must remain equivalent to the source-level list.
+
+⸻
+
+67. Tree and nested-structure assembly
+
+Piglog must support terms whose components are produced at different depths.
+
+Example:
+
+document(
+    metadata(Title, Author),
+    body(
+        introduction(Intro),
+        chapters(Chapters)
+    )
+)
+
+Partitions may independently produce:
+
+* Title;
+* Author;
+* Intro;
+* individual chapter elements.
+
+The assembler must use logical-variable identities and template paths such as:
+
+term_path([1, 1]).
+term_path([2, 1, 1]).
+term_path([2, 2]).
+
+Paths are metadata aids and must not replace unification semantics.
+
+⸻
+
+68. Aliasing preservation
+
+If the original term repeats the same variable, reassembly must preserve that identity.
+
+Example:
+
+pair(X, X)
+
+must not be reconstructed as:
+
+pair(X1, X2)
+
+with unrelated variables.
+
+If separate partitions propose:
+
+X1 = a
+X2 = b
+
+the assembly of pair(X, X) must fail because both positions refer to the same logical variable.
+
+⸻
+
+69. Cyclic and rational terms
+
+Piglog must define its policy for cyclic or rational terms.
+
+The initial implementation may either:
+
+* support SWI-Prolog rational-tree semantics;
+* require occurs-check-safe terms;
+* or reject cyclic cross-partition reassembly.
+
+The selected policy must be explicit and tested.
+
+Suggested option:
+
+term_policy(rational_trees)
+term_policy(occurs_check)
+term_policy(acyclic_only)
+
+The default should match the safest semantics that the implementation can reliably preserve.
+
+⸻
+
+70. Copying and isolation
+
+Worker-local terms must not accidentally share mutable or attributed state across threads.
+
+The runtime must use appropriate isolation such as:
+
+* copy_term/2;
+* copy_term/3;
+* duplicate_term/2;
+* serialisable binding maps;
+* thread-message copies;
+* isolated constraint stores.
+
+The implementation must document which term properties are preserved or stripped during transfer.
+
+Attributes required for supported constraints must not be silently discarded.
+
+⸻
+
+71. Reassembly cache
+
+Piglog may cache confirmed assembled terms.
+
+A reassembly-cache key must include:
+
+* source hash;
+* term template;
+* confirmed input bindings;
+* relevant constraints;
+* branch identity;
+* answer identity;
+* Piglog version.
+
+Provisional assembled terms may be cached only in a provisional cache linked to their assumptions.
+
+A provisional term must never be promoted merely because it was cached.
+
+⸻
+
+72. Garbage collection of environments
+
+The runtime must release environments, fragments, and partition results when they can no longer contribute to a valid answer.
+
+Candidates for collection include:
+
+* rejected speculative environments;
+* alternatives excluded by cut;
+* superseded provisional terms;
+* completed environments after answer commitment;
+* cancelled pipeline fragments;
+* cache-expired partial results.
+
+Environment collection must not remove data required for ordered earlier answers that remain unresolved.
+
+⸻
+
+73. Required internal interfaces
+
+Piglog should provide internal predicates equivalent to:
+
+piglog_create_environment(
+    ParentEnvironment,
+    BranchPath,
+    Environment
+).
+piglog_add_partition_result(
+    Environment,
+    PartitionResult,
+    NewEnvironment
+).
+piglog_merge_environments(
+    LeftEnvironment,
+    RightEnvironment,
+    MergedEnvironment
+).
+piglog_join_result_sets(
+    LeftResults,
+    RightResults,
+    JoinSpec,
+    JoinedResults
+).
+piglog_assemble_template(
+    TemplateId,
+    Environment,
+    AssemblyStatus,
+    Term
+).
+piglog_confirm_assembled_term(
+    TermId,
+    ConfirmedTerm
+).
+piglog_invalidate_result(
+    ResultId,
+    Reason
+).
+piglog_invalidate_dependent_terms(
+    ResultId,
+    InvalidatedTermIds
+).
+
+These predicates may remain private to the implementation.
+
+⸻
+
+74. Reassembly traces
+
+The trace system must support events such as:
+
+environment_created(EnvironmentId, ParentId).
+partition_result_received(ResultId, PartitionId).
+binding_integrated(EnvironmentId, VariableId, Value).
+constraint_integrated(EnvironmentId, Constraint).
+environment_merge_succeeded(LeftId, RightId, NewId).
+environment_merge_failed(LeftId, RightId, Reason).
+term_assembly_started(TermId, TemplateId).
+term_component_available(TermId, VariableId, ResultId).
+term_assembled(TermId, Status).
+term_invalidated(TermId, Cause).
+answer_committed(AnswerId, TermId).
+
+Trace output must allow a user to understand how a final term was assembled.
+
+⸻
+
+75. Explanation requirements
+
+Piglog must be able to explain:
+
+* which partitions produced each component of a term;
+* which variables linked the partitions;
+* why two result environments were joined;
+* why two environments were considered incompatible;
+* why a term remained partial;
+* which component prevented confirmation;
+* why a provisional term was invalidated;
+* why an answer was delayed for ordering;
+* whether a Cartesian product, keyed join, splice, or direct unification was used.
+
+Example query:
+
+?- piglog_explain_term(TermId, Explanation).
+
+⸻
+
+76. Safety requirements
+
+Term reassembly must not:
+
+* merge mutually exclusive branch results;
+* commit unverified values;
+* lose variable aliasing;
+* discard required constraints;
+* use worker completion order as logical order;
+* combine results from different parent environments accidentally;
+* combine cache entries from incompatible source versions;
+* expose provisional terms through side effects;
+* silently omit failed components;
+* reinterpret ordinary conjunction as zip-style pairing.
+
+Where compatibility cannot be established, the merge must fail or execution must fall back conservatively.
+
+⸻
+
+77. Performance requirements
+
+The assembler must avoid becoming a central bottleneck.
+
+The implementation should use:
+
+* indexed result lookup;
+* incremental joins;
+* keyed environment maps;
+* early conflict detection;
+* lazy Cartesian products;
+* answer-demand limits;
+* streaming assembly;
+* selective invalidation;
+* partition fusion for trivial constructors.
+
+The benchmark suite must measure:
+
+* environment-merge time;
+* term-assembly time;
+* result-index size;
+* number of attempted joins;
+* number of rejected joins;
+* number of assembled provisional terms;
+* number of invalidated terms;
+* memory consumed by environments;
+* reassembly overhead relative to useful computation.
+
+⸻
+
+78. Required tests
+
+Add the following plunit test groups:
+
+logical_variable_identity
+binding_integration
+binding_conflicts
+constraint_integration
+partial_term_assembly
+nested_term_assembly
+alias_preservation
+nondeterministic_environment_products
+keyed_result_joining
+branch_provenance
+cut_commitment
+answer_ordering
+speculative_term_assembly
+selective_reassembly_after_rollback
+stream_fragment_assembly
+difference_list_assembly
+environment_garbage_collection
+reassembly_explanations
+
+Required test cases include:
+
+1. Two partitions bind different variables in one result term.
+2. One partition binds a variable appearing inside another partition’s partial term.
+3. Compatible constraints merge successfully.
+4. Inconsistent constraints reject an environment.
+5. Repeated variables preserve aliasing.
+6. Independent alternatives form the correct Cartesian product.
+7. Shared-key alternatives use compatible matching.
+8. Mutually exclusive branches are never merged.
+9. An incorrect speculative field invalidates only dependent terms.
+10. Ordered answers remain ordered despite out-of-order completion.
+11. A partial term enables a downstream consumer.
+12. A confirmed side effect receives only a confirmed assembled term.
+13. A cut excludes uncommitted alternative environments.
+14. A Detlog splice is assembled according to splice metadata.
+15. Unsupported attributed variables trigger safe fallback.
+
+⸻
+
+79. Development stages
+
+Stage A: Explicit result records
+
+Replace implicit reliance on worker-local variable bindings with structured partition-result records.
+
+Stage B: Stable variable identifiers
+
+Assign and preserve logical-variable identities across partitions.
+
+Stage C: Single-answer environment integration
+
+Merge deterministic partition outputs into one environment and assemble final terms.
+
+Stage D: Constraint integration
+
+Support selected SWI-Prolog constraint systems conservatively.
+
+Stage E: Nondeterministic result joins
+
+Implement compatible products, keyed joins, branch provenance, and answer identities.
+
+Stage F: Partial and pipeline assembly
+
+Support partial terms, streams, ordered fragments, and incremental downstream execution.
+
+Stage G: Speculative assembly
+
+Support provisional environments, term invalidation, selective rollback, and reassembly.
+
+Stage H: Detlog integration
+
+Use explicit splice metadata for deterministic branch-result combination.
+
+Each stage must include semantic equivalence tests against ordinary SWI-Prolog.
+
+⸻
+
+80. Acceptance criteria
+
+Cross-partition term reassembly is complete only when Piglog can demonstrate all of the following:
+
+1. Two independently executed partitions contribute fields to one final compound term.
+2. Shared variables unify across partition boundaries.
+3. Incompatible bindings reject only the affected logical environment.
+4. Constraints are preserved and checked during merging.
+5. Repeated-variable aliasing is preserved.
+6. Nondeterministic independent outputs produce the correct logical combinations.
+7. Branch provenance prevents invalid cross-branch combinations.
+8. Partial terms can unlock downstream partitions.
+9. Speculative components create only provisional terms.
+10. Incorrect speculation selectively invalidates and reassembles dependent terms.
+11. Ordered answer presentation remains equivalent to the accepted Prolog program.
+12. Detlog splice outputs can be integrated without recreating hidden choicepoints.
+13. Trace and explanation output identifies the source of every term component.
+14. Benchmarks report the cost and benefit of term reassembly.
+15. The scheduler no longer claims explicit cross-partition reassembly while merely calling the original goal directly.
+
+⸻
+
+81. Final reassembly principle
+
+Piglog must follow this rule:
+
+Separate workers may produce pieces of an answer, but only a logically compatible environment may assemble and confirm the answer.

@@ -6,6 +6,7 @@
 :- use_module(piglog_prediction).
 :- use_module(piglog_perturbation).
 :- use_module(piglog_codegen).
+:- use_module(piglog_reassembly).
 
 convert_goal(Goal, Options, Hash, Generated) :-
     build_partitions(Goal, Partitions),
@@ -13,6 +14,9 @@ convert_goal(Goal, Options, Hash, Generated) :-
     maplist(classify_partition, Partitions, Purity),
     collect_predictions(Partitions, Predictions),
     collect_perturbations(Perturbations),
+    goal_logical_variables(Goal, LogicalVariables),
+    build_term_templates(Goal, LogicalVariables, TermTemplates),
+    default_term_requirements(TermTemplates, TermRequirements),
     Version = '0.5.0',
     Model = generated{
         goal: Goal,
@@ -23,6 +27,9 @@ convert_goal(Goal, Options, Hash, Generated) :-
         purity: Purity,
         predictions: Predictions,
         perturbations: Perturbations,
+        logical_variables: LogicalVariables,
+        term_templates: TermTemplates,
+        term_requirements: TermRequirements,
         version: Version
     },
     build_generated_code_terms(Model, Version, Terms),

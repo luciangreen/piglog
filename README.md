@@ -20,6 +20,7 @@ Piglog leaves speculative parallelism as a configurable optimisation rather than
 - Option categories: execution mode, scheduling strategy, answer policy, trace level, code output policy
 - Readable generated code terms with metadata (`piglog_generated`, source hash, version, options, generation timestamp)
 - Partition extraction and value-dependency graph extraction
+- Cross-partition reassembly foundations (logical-variable identifiers, environment merge/join, template assembly, rollback invalidation, explanations)
 - Safety-first runtime gate checks and adaptive fallback reasoning
 - plunit test suite and benchmark scaffold
 - Documentation set in `docs/`

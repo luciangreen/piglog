@@ -10,6 +10,9 @@ build_generated_code_terms(Model, Version, Terms) :-
     Options = Model.options,
     Partitions = Model.partitions,
     Dependencies = Model.dependencies,
+    LogicalVariables = Model.logical_variables,
+    TermTemplates = Model.term_templates,
+    TermRequirements = Model.term_requirements,
     maplist(partition_term, Partitions, PartitionTerms),
     maplist(dep_term, Dependencies, DependencyTerms),
     HeaderTerms = [
@@ -20,7 +23,10 @@ build_generated_code_terms(Model, Version, Terms) :-
         (:- piglog_generated_at(Date)),
         piglog_entry(Model.goal, Model.goal)
     ],
-    append(HeaderTerms, PartitionTerms, WithPartitions),
+    append(HeaderTerms, LogicalVariables, WithVariables),
+    append(WithVariables, TermTemplates, WithTemplates),
+    append(WithTemplates, TermRequirements, WithRequirements),
+    append(WithRequirements, PartitionTerms, WithPartitions),
     append(WithPartitions, DependencyTerms, Terms).
 
 partition_term(partition(Id, Goal, Requires, Produces, Readiness), piglog_partition(Id, Goal, Requires, Produces, Readiness)).

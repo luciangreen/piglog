@@ -1,7 +1,11 @@
-# Formal behavioural specification (v0.5 baseline)
+# Formal behavioural specification (current prototype)
 
-- For accepted non-speculative goals, Piglog delegates answer production to the underlying Prolog goal and therefore preserves substitutions, multiplicity, exceptions, and side-effect order.
-- `answers(first)` commits to `once/1`; `answers(ordered)` and `answers(all)` preserve logical source order via normal Prolog enumeration.
-- `execution(adaptive)` may report fallback to sequential when estimated overhead exceeds estimated work.
-- Closed execution gates raise `permission_error(run, piglog_gate, Gate)`.
-- Generated code metadata includes source hash, Piglog version, options, timestamp, partitions, and dependencies.
+- The runtime calls the original Prolog goal; the generated partition graph is not used to produce answers.
+- `answers(first)` wraps the goal in `once/1`. `answers(ordered)` and `answers(all)` both use ordinary Prolog enumeration, preserving its substitutions, multiplicity, exceptions, and side-effect order.
+- Execution and scheduling mode options are validated and recorded. They do not currently create parallel, speculative, pipelined, fused, or failure-first execution.
+- Adaptive mode may emit an estimate-based trace event; it does not switch the execution path.
+- A closed gate on the entry predicate raises `permission_error(run, piglog_gate, Gate)`. Gates on nested calls are not enforced by the current runtime.
+- Generated metadata includes source hash, Piglog version, options, timestamp, top-level conjunction partitions, and inferred shared-variable dependencies. The saved terms are not a standalone executable conversion.
+- Prediction, perturbation, profiling, and cross-partition reassembly are not runtime behaviors in this prototype.
+
+See [feature status](feature_status.md) for known limits and the tests that can currently be run.

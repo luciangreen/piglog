@@ -1,11 +1,3 @@
-# Piglog
-
-Piglog is an in-SWI-Prolog source converter and runtime scheduler.
-
-It accepts a goal or source file, creates readable partition metadata, and executes with deterministic safety-first scheduling modes. Piglog partitions a Prolog program into the smallest independently executable sections (typically predicates, clauses, or if–then branches, depending on data dependencies). It constructs a dependency graph and schedules each partition as soon as its required variables or constraints become available. Independent partitions execute concurrently when resources permit, while dependent partitions are queued until their inputs are satisfied. Optionally, Piglog may speculatively execute partitions whose inputs are highly probable, discarding incorrect speculative results if necessary.
-
-Piglog leaves speculative parallelism as a configurable optimisation rather than a mandatory part of the language.
-
 ```prolog
 ?- use_module(prolog/piglog).
 ?- piglog(my_algorithm(X, Y),
@@ -14,51 +6,48 @@ Piglog leaves speculative parallelism as a configurable optimisation rather than
            code(show)]).
 ```
 
-## Features (v0.5 baseline)
+# Piglog
 
-- Public API: `piglog/1`, `piglog/2`, `piglog_file/3`, `piglog_convert/3`, `piglog_run_generated/2`, `piglog_show_code/1`, `piglog_save_code/2`, `piglog_clear_cache/0`, `piglog_clear_profile/0`, `piglog_unlock/1`, `piglog_lock/1`
-- Option categories: execution mode, scheduling strategy, answer policy, trace level, code output policy
-- Readable generated code terms with metadata (`piglog_generated`, source hash, version, options, generation timestamp)
-- Partition extraction and value-dependency graph extraction
-- Safety-first runtime gate checks and adaptive fallback reasoning
-- plunit test suite and benchmark scaffold
-- Documentation set in `docs/`
+Piglog is an experimental in-SWI-Prolog converter and runtime-scheduling prototype. It accepts a goal or source file, produces readable partition and dependency metadata, and runs the original goal through SWI-Prolog.
 
-## Quick start
+The current scheduler does **not** execute partitions independently, create worker threads, or perform speculative execution. The execution and scheduling options are accepted by the API, but the runtime currently delegates directly to the original goal. See [feature status](docs/feature_status.md) for what works today and what remains.
 
-1. `swipl`
-2. `?- [prolog/piglog].`
-3. `?- piglog(member(X, [a,b,c]), [answers(first)]).`
+## Current features
 
-## Showcase
+- `piglog/1`, `piglog/2`, `piglog_file/3`, and `piglog_convert/3`
+- Readable generated metadata for top-level conjunctions and inferred variable dependencies
+- Stable logical-variable IDs in conversion metadata and a structured partition-result record type
+- Code display, return, and save options
+- `answers(first)` using `once/1`; `answers(ordered)` and `answers(all)` using ordinary Prolog enumeration
+- Trace-term collection and goal-level execution gates
+- Conversion caching for the current SWI-Prolog session
+- A plunit test suite and a small wall-time benchmark scaffold
 
-Try these commands in `swipl` after loading `prolog/piglog` to see the main parts of the repository in action:
+These are prototype capabilities, not a claim that every option is backed by a dedicated scheduler. In particular, result records and variable IDs are not yet integrated or merged by the runtime, and prediction and perturbation declarations are collected as metadata but are not verified or used to affect execution.
 
-### Run a goal with adaptive scheduling
+## Try it
 
-```prolog
-?- piglog(member(X, [a,b,c]), [execution(adaptive), answers(ordered)]).
-```
-
-### Generate and print readable Piglog code
+Load `prolog/piglog.pl` from the repository root in SWI-Prolog:
 
 ```prolog
-?- piglog((A is 2 + 1, B is A * 2), [code(show), trace(summary)]).
+?- use_module(prolog/piglog).
+?- piglog(member(X, [a,b,c]), [answers(first)]).
 ```
 
-### Save generated code to a file
+Convert a goal and inspect its generated terms:
 
 ```prolog
-?- piglog((A is 2 + 1, B is A * 2), [code(save('generated_demo.piglog.pl'))]).
+?- piglog_convert((A is 2 + 1, B is A * 2), [], Generated).
+?- piglog_show_code(Generated).
 ```
 
-### Capture scheduler trace terms for inspection
+Capture trace events:
 
 ```prolog
 ?- piglog(member(X, [a,b,c]), [trace(terms(Events)), answers(first)]).
 ```
 
-### Exercise execution gates
+Run an execution-gate example:
 
 ```prolog
 ?- [examples/secure_learning].
@@ -66,14 +55,24 @@ Try these commands in `swipl` after loading `prolog/piglog` to see the main part
 ?- piglog(reveal_answer(q1, Answer), [answers(first)]).
 ```
 
-## Running tests
+## Tests and benchmarks
+
+Install SWI-Prolog, then run the full suite from the repository root:
 
 ```bash
 swipl -q -g run_tests -t halt test/test_all.pl
 ```
 
-## Running benchmarks
+To run one test file, substitute its path, for example:
+
+```bash
+swipl -q -g run_tests -t halt test/test_gates.pl
+```
+
+The current test files are `test/test_piglog.pl`, `test/test_converter.pl`, `test/test_scheduler.pl`, `test/test_predictions.pl`, `test/test_gates.pl`, and `test/test_reassembly.pl`. The benchmark scaffold can be run with:
 
 ```bash
 swipl -q -g run_benchmarks -t halt benchmark/run_benchmarks.pl
 ```
+
+The benchmark currently runs ordinary Prolog cases and reports wall time; it does not compare Piglog modes or validate answer equivalence. See [feature status](docs/feature_status.md) and [the manual](docs/user_manual.md) for option semantics, limitations, and planned work.

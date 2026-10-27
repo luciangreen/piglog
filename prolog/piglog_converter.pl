@@ -5,11 +5,14 @@
 :- use_module(piglog_purity).
 :- use_module(piglog_prediction).
 :- use_module(piglog_perturbation).
+:- use_module(piglog_reassembly).
 :- use_module(piglog_codegen).
 
 convert_goal(Goal, Options, Hash, Generated) :-
     build_partitions(Goal, Partitions),
     build_dependency_graph(Partitions, Dependencies),
+    logical_variable_map(Goal, LogicalVariables),
+    partition_variable_ids(Partitions, LogicalVariables, PartitionVariables),
     maplist(classify_partition, Partitions, Purity),
     collect_predictions(Partitions, Predictions),
     collect_perturbations(Perturbations),
@@ -20,6 +23,8 @@ convert_goal(Goal, Options, Hash, Generated) :-
         hash: Hash,
         partitions: Partitions,
         dependencies: Dependencies,
+        logical_variables: LogicalVariables,
+        partition_variables: PartitionVariables,
         purity: Purity,
         predictions: Predictions,
         perturbations: Perturbations,

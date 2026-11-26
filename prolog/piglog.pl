@@ -33,6 +33,7 @@ piglog(Goal) :-
 
 piglog(Goal, UserOptions) :-
     normalize_options(UserOptions, Goal, Options),
+    warn_inactive_options(UserOptions),
     once((
         piglog_convert(Goal, UserOptions, Generated),
         maybe_output_code(Generated, Options)
@@ -62,6 +63,21 @@ piglog_run_generated(Generated, UserOptions) :-
     normalize_options(UserOptions, Goal, Options),
     enforce_gate_for_goal(Goal),
     run_generated(Generated, Options).
+
+%% warn_inactive_options(+UserOptions)
+%  Options that are accepted but do not yet change how the goal runs (see
+%  docs/feature_status.md) get a warning, so they are not mistaken for
+%  working features: the goal always runs as ordinary Prolog.
+warn_inactive_options(UserOptions) :-
+    forall(( member(O, UserOptions), inactive_option(O) ),
+           format(user_error, "Warning: piglog: ~q is accepted but does not yet change execution; the goal runs as ordinary Prolog (see docs/feature_status.md).~n", [O])).
+
+inactive_option(execution(M)) :- M \== sequential, M \== prolog_order.
+inactive_option(scheduling(S)) :- S \== normal.
+inactive_option(workers(_)).
+inactive_option(speculation_depth(_)).
+inactive_option(use_perturbations(true)).
+inactive_option(profile(true)).
 
 piglog_show_code(Generated) :-
     get_generated_terms(Generated, Terms),
